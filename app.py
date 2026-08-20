@@ -44,11 +44,15 @@ def buscar_materiais(df, termo_busca):
         return pd.DataFrame()
     
     termos = termo_busca.lower().split()
-    df_busca = df.astype(str).apply(lambda x: ' '.join(x).str.lower(), axis=1)
     
-    mascara = pd.Series(True, index=df.index)
-    for termo in termos:
-        mascara &= df_busca.str.contains(termo, na=False, regex=False)
+    # Cria uma máscara para buscar os termos em qualquer coluna do DataFrame
+    mascara = pd.Series(False, index=df.index)
+    for col in df.columns:
+        col_str = df[col].astype(str).str.lower()
+        sub_mascara = pd.Series(True, index=df.index)
+        for termo in termos:
+            sub_mascara &= col_str.str.contains(termo, na=False, regex=False)
+        mascara |= sub_mascara
         
     return df[mascara]
 
