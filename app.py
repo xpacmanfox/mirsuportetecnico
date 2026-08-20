@@ -69,15 +69,15 @@ if st.session_state.sistema_ativo is None:
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
-st.info("### 🛤️ Máquinas de Via")
+        st.info("### 🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
         if st.button("Acessar Máquinas de Via", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
-    with col2:        
+    with col2:        # <-- Aqui parece haver espaços extras ou desalinhamento
 
-st.info("### 🔍 Catálogo de Peças (PDF)")
+        st.info("### 🔍 Catálogo de Peças (PDF)")
         st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
         if st.button("Acessar Catálogo de Peças", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "catalogo_pecas"
