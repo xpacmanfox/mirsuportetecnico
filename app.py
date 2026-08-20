@@ -179,32 +179,6 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
                     st.rerun()
         else:
             st.info("Nenhum PDF cadastrado no momento.")
-    else:
-        st.markdown("### 📂 Gerenciamento do Banco de Dados de Catálogos")
-        st.markdown("Faça o upload de novos catálogos em PDF para atualizar a base de fornecedores.")
-        
-        uploaded_pdfs = st.file_uploader("Carregar novos catálogos (PDF)", type=["pdf"], accept_multiple_files=True, key="upload_pdf_cat")
-        
-        if uploaded_pdfs:
-            for up_file in uploaded_pdfs:
-                caminho_salvamento = pasta_catalogo / up_file.name
-                with open(caminho_salvamento, "wb") as f:
-                    f.write(up_file.getbuffer())
-            st.success(f"{len(uploaded_pdfs)} catálogo(s) salvo(s) com sucesso!")
-            
-        st.divider()
-        st.markdown("#### PDFs atualmente na base:")
-        arquivos_atuais = list(pasta_catalogo.glob("**/*.pdf"))
-        if arquivos_atuais:
-            for arq in arquivos_atuais:
-                col_p1, col_p2 = st.columns([0.8, 0.2])
-                col_p1.text(f"📄 {arq.name}")
-                if col_p2.button("Excluir", key=f"del_cat_{arq.name}"):
-                    arq.unlink()
-                    st.success(f"Arquivo {arq.name} removido!")
-                    st.rerun()
-        else:
-            st.info("Nenhum PDF cadastrado no momento.")
 
 # --- MÓDULO 4: CÓDIGO DE MATERIAIS (PLANILHA INTERNA) ---
 elif st.session_state.sistema_ativo == "codigo_materiais":
