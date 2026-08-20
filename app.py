@@ -71,7 +71,7 @@ if st.session_state.sistema_ativo is None:
             
         st.info("### 🔍 Catálogo de Peças (PDF)")
         st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
-        if st.button("Acessar Catálogo de Peças", use_container_width=True):
+        if st.button("Acessar Catálogo de Peças", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "catalogo_pecas"
             st.rerun()
             
@@ -84,7 +84,7 @@ if st.session_state.sistema_ativo is None:
             
         st.info("### 📋 Código de Materiais (Interno)")
         st.markdown("Consulta em planilha com códigos internos da empresa para requisição de materiais.")
-        if st.button("Acessar Código de Materiais", use_container_width=True):
+        if st.button("Acessar Código de Materiais", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "codigo_materiais"
             st.rerun()
 
@@ -94,56 +94,84 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
         st.session_state.sistema_ativo = None
         st.rerun()
         
-    st.title("🔍 Buscador de Peças em Catálogos")
-    st.markdown("Pesquise por nome, descrição ou part number em seus catálogos em PDF.")
+    st.title("🔍 Buscador de Peças em Catálogos (PDF)")
     
     pasta_catalogo = Path("./Docs_Catalogos")
     pasta_catalogo.mkdir(exist_ok=True)
     
-    termo_busca = st.text_input("Digite o nome da peça ou Part Number:")
+    aba_cat = st.radio("Navegação Catálogo", ["🔍 Realizar Busca", "📂 Gerenciar Base de PDFs"], horizontal=True)
     
-    if st.button("Buscar no Catálogo", type="primary"):
-        if not termo_busca:
-            st.warning("Por favor, digite um termo para buscar.")
+    if aba_cat == "🔍 Realizar Busca":
+        termo_busca = st.text_input("Digite o nome da peça ou Part Number:")
+        
+        if st.button("Buscar no Catálogo", type="primary"):
+            if not termo_busca:
+                st.warning("Por favor, digite um termo para buscar.")
+            else:
+                with st.spinner("Consultando catálogos e analisando com IA..."):
+                    arquivos_pdf = list(pasta_catalogo.glob("**/*.pdf"))
+                    if not arquivos_pdf:
+                        st.warning(f"Nenhum arquivo PDF encontrado na pasta `{pasta_catalogo}`. Vá na aba 'Gerenciar Base de PDFs' para adicionar.")
+                    else:
+                        contexto_partes = []
+                        for pdf_path in arquivos_pdf:
+                            reader = pypdf.PdfReader(str(pdf_path))
+                            for i, page in enumerate(reader.pages):
+                                texto = page.extract_text()
+                                if texto and (termo_busca.lower() in texto.lower() or len(contexto_partes) < 5):
+                                    contexto_partes.append(f"Arquivo: {pdf_path.name} (Pág {i+1})\n{texto[:1000]}")
+                        
+                        contexto = "\n\n".join(contexto_partes[:6]) if contexto_partes else "Nenhum trecho direto localizado."
+                        
+                        prompt_sistema = """
+                        Você é um agente especialista em suprimentos, engenharia e peças industriais.
+                        Sua tarefa é analisar os trechos de catálogos fornecidos e identificar os itens correspondentes à busca do usuário.
+                        
+                        Para cada item encontrado, retorne de forma estruturada:
+                        - **Peça / Material:** [Nome claro do item]
+                        - **Part Number / Código:** [Código encontrado no catálogo]
+                        - **Descrição Resumida:** [Breve resumo técnico]
+                        
+                        Se não encontrar informações precisas, informe educadamente que o item não foi localizado.
+                        """
+                        
+                        response = client.chat.completions.create(
+                            model="openai/gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": prompt_sistema},
+                                {"role": "user", "content": f"Busca do usuário: {termo_busca}\n\nTrechos dos Catálogos:\n{contexto}"}
+                            ],
+                            temperature=0.0
+                        )
+                        st.markdown("### Resultados da IA:")
+                        st.markdown(response.choices[0].message.content)
+    
+    else:
+        st.markdown("### 📂 Gerenciamento do Banco de Dados de Catálogos")
+        st.markdown("Faça o upload de novos catálogos em PDF para atualizar a base de fornecedores.")
+        
+        uploaded_pdfs = st.file_uploader("Carregar novos catálogos (PDF)", type=["pdf"], accept_multiple_files=True, key="upload_pdf_cat")
+        
+        if uploaded_pdfs:
+            for up_file in uploaded_pdfs:
+                caminho_salvamento = pasta_catalogo / up_file.name
+                with open(caminho_salvamento, "wb") as f:
+                    f.write(up_file.getbuffer())
+            st.success(f"{len(uploaded_pdfs)} catálogo(s) salvo(s) com sucesso!")
+            
+        st.divider()
+        st.markdown("#### PDFs atualmente na base:")
+        arquivos_atuais = list(pasta_catalogo.glob("**/*.pdf"))
+        if arquivos_atuais:
+            for arq in arquivos_atuais:
+                col_p1, col_p2 = st.columns([0.8, 0.2])
+                col_p1.text(f"📄 {arq.name}")
+                if col_p2.button("Excluir", key=f"del_cat_{arq.name}"):
+                    arq.unlink()
+                    st.success(f"Arquivo {arq.name} removido!")
+                    st.rerun()
         else:
-            with st.spinner("Consultando catálogos e analisando com IA..."):
-                arquivos_pdf = list(pasta_catalogo.glob("**/*.pdf"))
-                if not arquivos_pdf:
-                    st.warning(f"Nenhum arquivo PDF encontrado na pasta `{pasta_catalogo}`. Adicione seus catálogos lá.")
-                else:
-                    # Extrai texto dos PDFs da pasta de catálogos
-                    contexto_partes = []
-                    for pdf_path in arquivos_pdf:
-                        reader = pypdf.PdfReader(str(pdf_path))
-                        for i, page in enumerate(reader.pages):
-                            texto = page.extract_text()
-                            if texto and (termo_busca.lower() in texto.lower() or len(contexto_partes) < 5):
-                                contexto_partes.append(f"Arquivo: {pdf_path.name} (Pág {i+1})\n{texto[:1000]}")
-                    
-                    contexto = "\n\n".join(contexto_partes[:6]) if contexto_partes else "Nenhum trecho direto localizado."
-                    
-                    prompt_sistema = """
-                    Você é um agente especialista em suprimentos, engenharia e peças industriais.
-                    Sua tarefa é analisar os trechos de catálogos fornecidos e identificar os itens correspondentes à busca do usuário.
-                    
-                    Para cada item encontrado, retorne de forma estruturada:
-                    - **Peça / Material:** [Nome claro do item]
-                    - **Part Number / Código:** [Código encontrado no catálogo]
-                    - **Descrição Resumida:** [Breve resumo técnico]
-                    
-                    Se não encontrar informações precisas, informe educadamente que o item não foi localizado.
-                    """
-                    
-                    response = client.chat.completions.create(
-                        model="openai/gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": f"Busca do usuário: {termo_busca}\n\nTrechos dos Catálogos:\n{contexto}"}
-                        ],
-                        temperature=0.0
-                    )
-                    st.markdown("### Resultados da IA:")
-                    st.markdown(response.choices[0].message.content)
+            st.info("Nenhum PDF cadastrado no momento.")
 
 # --- MÓDULO 4: CÓDIGO DE MATERIAIS (PLANILHA INTERNA) ---
 elif st.session_state.sistema_ativo == "codigo_materiais":
@@ -152,45 +180,72 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
         st.rerun()
         
     st.title("📋 Buscador de Código de Materiais (Planilha Interna)")
-    st.markdown("Consulte os códigos internos da empresa na planilha de materiais.")
     
-    caminho_excel = Path("materiais_internos.xlsx")
+    pasta_excel = Path("./Docs_Planilhas")
+    pasta_excel.mkdir(exist_ok=True)
+    caminho_excel = pasta_excel / "materiais_internos.xlsx"
     
-    termo_interno = st.text_input("Digite o nome ou código interno do material:")
+    aba_mat = st.radio("Navegação Materiais", ["📋 Realizar Consulta", "📂 Gerenciar Planilha de Dados"], horizontal=True)
     
-    if st.button("Consultar Materiais", type="primary"):
-        if not termo_interno:
-            st.warning("Informe um termo para a consulta.")
+    if aba_mat == "📋 Realizar Consulta":
+        termo_interno = st.text_input("Digite o nome ou código interno do material:")
+        
+        if st.button("Consultar Materiais", type="primary"):
+            if not termo_interno:
+                st.warning("Informe um termo para a consulta.")
+            else:
+                with st.spinner("Buscando na planilha interna..."):
+                    if not caminho_excel.exists():
+                        st.error(f"Nenhuma planilha encontrada em `{caminho_excel}`. Vá na aba 'Gerenciar Planilha de Dados' para fazer o upload.")
+                    else:
+                        df = pd.read_excel(caminho_excel)
+                        dados_amostra = df.astype(str).to_dict(orient="records")
+                        
+                        prompt_sistema = """
+                        Você é um assistente de almoxarifado e compras corporativas. 
+                        Sua função é receber a busca de um usuário e cruzar com os dados da planilha interna de materiais da empresa.
+                        
+                        Retorne os itens correspondentes de forma limpa e estruturada:
+                        - **Código Interno para Requisição:** [...]
+                        - **Descrição do Material:** [...]
+                        - **Detalhes Adicionais:** [...]
+                        
+                        Seja direto e objetivo.
+                        """
+                        
+                        response = client.chat.completions.create(
+                            model="openai/gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": prompt_sistema},
+                                {"role": "user", "content": f"Busca: {termo_interno}\n\nDados da Planilha:\n{str(dados_amostra[:150])}"}
+                            ],
+                            temperature=0.0
+                        )
+                        st.markdown("### Resultados Encontrados:")
+                        st.markdown(response.choices[0].message.content)
+                        
+    else:
+        st.markdown("### 📂 Gerenciamento da Planilha de Materiais")
+        st.markdown("Faça o upload da planilha atualizada contendo os códigos internos (`.xlsx` ou `.xls`).")
+        
+        uploaded_excel = st.file_uploader("Carregar planilha de materiais", type=["xlsx", "xls"], key="upload_excel_mat")
+        
+        if uploaded_excel:
+            with open(caminho_excel, "wb") as f:
+                f.write(uploaded_excel.getbuffer())
+            st.success("Planilha de materiais atualizada com sucesso!")
+            
+        st.divider()
+        if caminho_excel.exists():
+            st.success(f"✅ Planilha ativa no sistema: `{caminho_excel.name}`")
+            try:
+                df_preview = pd.read_excel(caminho_excel)
+                st.markdown("#### Pré-visualização dos dados:")
+                st.dataframe(df_preview.head(10), use_container_width=True)
+            except Exception as e:
+                st.error(f"Erro ao ler a planilha: {e}")
         else:
-            with st.spinner("Buscando na planilha interna..."):
-                if not caminho_excel.exists():
-                    st.error(f"O arquivo `{caminho_excel}` não foi encontrado na raiz do projeto. Por favor, adicione-o.")
-                else:
-                    df = pd.read_excel(caminho_excel)
-                    dados_amostra = df.astype(str).to_dict(orient="records")
-                    
-                    prompt_sistema = """
-                    Você é um assistente de almoxarifado e compras corporativas. 
-                    Sua função é receber a busca de um usuário e cruzar com os dados da planilha interna de materiais da empresa.
-                    
-                    Retorne os itens correspondentes de forma limpa e estruturada:
-                    - **Código Interno para Requisição:** [...]
-                    - **Descrição do Material:** [...]
-                    - **Detalhes Adicionais:** [...]
-                    
-                    Seja direto e objetivo.
-                    """
-                    
-                    response = client.chat.completions.create(
-                        model="openai/gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": f"Busca: {termo_interno}\n\nDados da Planilha:\n{str(dados_amostra[:150])}"}
-                        ],
-                        temperature=0.0
-                    )
-                    st.markdown("### Resultados Encontrados:")
-                    st.markdown(response.choices[0].message.content)
+            st.warning("⚠️ Nenhuma planilha de materiais carregada ainda.")
 
 # --- MÓDULOS DE SUPORTE TÉCNICO (Locomotivas e Máquinas de Via) ---
 else:
