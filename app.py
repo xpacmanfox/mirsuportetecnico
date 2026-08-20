@@ -102,7 +102,7 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
     aba_cat = st.radio("Navegação Catálogo", ["🔍 Realizar Busca", "📂 Gerenciar Base de PDFs"], horizontal=True)
     
     if aba_cat == "🔍 Realizar Busca":
-        termo_busca = st.text_input("Digite o nome da peça ou Part Number:")
+        termo_busca = st.text_input("Digite o nome da peça, descrição ou Part Number:")
         
         if st.button("Buscar no Catálogo", type="primary"):
             if not termo_busca:
@@ -115,37 +115,70 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
                     else:
                         contexto_partes = []
                         for pdf_path in arquivos_pdf:
+                            # O nome do arquivo PDF serve para identificar o modelo da máquina/equipamento
+                            nome_modelo_maquina = pdf_path.stem.replace("_", " ").replace("-", " ")
                             reader = pypdf.PdfReader(str(pdf_path))
                             for i, page in enumerate(reader.pages):
                                 texto = page.extract_text()
-                                if texto and (termo_busca.lower() in texto.lower() or len(contexto_partes) < 5):
-                                    contexto_partes.append(f"Arquivo: {pdf_path.name} (Pág {i+1})\n{texto[:1000]}")
+                                if texto and termo_busca.lower() in texto.lower():
+                                    contexto_partes.append(f"--- Modelo/Máquina (Arquivo): {nome_modelo_maquina} | Página: {i+1} ---\n{texto[:1200]}")
                         
-                        contexto = "\n\n".join(contexto_partes[:6]) if contexto_partes else "Nenhum trecho direto localizado."
-                        
-                        prompt_sistema = """
-                        Você é um agente especialista em suprimentos, engenharia e peças industriais.
-                        Sua tarefa é analisar os trechos de catálogos fornecidos e identificar os itens correspondentes à busca do usuário.
-                        
-                        Para cada item encontrado, retorne de forma estruturada:
-                        - **Peça / Material:** [Nome claro do item]
-                        - **Part Number / Código:** [Código encontrado no catálogo]
-                        - **Descrição Resumida:** [Breve resumo técnico]
-                        
-                        Se não encontrar informações precisas, informe educadamente que o item não foi localizado.
-                        """
-                        
-                        response = client.chat.completions.create(
-                            model="openai/gpt-4o-mini",
-                            messages=[
-                                {"role": "system", "content": prompt_sistema},
-                                {"role": "user", "content": f"Busca do usuário: {termo_busca}\n\nTrechos dos Catálogos:\n{contexto}"}
-                            ],
-                            temperature=0.0
-                        )
-                        st.markdown("### Resultados da IA:")
-                        st.markdown(response.choices[0].message.content)
+                        if not contexto_partes:
+                            st.info("Nenhum trecho direto correspondente foi encontrado nos arquivos. Tente um termo mais genérico.")
+                        else:
+                            contexto = "\n\n".join(contexto_partes[:10]) # Limita para enviar os melhores trechos
+                            
+                            prompt_sistema = """
+                            Você é um agente especialista em suprimentos, engenharia e peças industriais ferroviárias.
+                            Sua tarefa é analisar os trechos de catálogos fornecidos, identificar **todos** os itens correspondentes à busca do usuário e agrupar separadamente por máquina/modelo (cujo nome consta no início de cada trecho do contexto).
+                            
+                            Para CADA item encontrado, retorne em um formato limpo, estruturado e fácil de ler (em bullet points ou cards por máquina):
+                            - **🚆 Modelo da Máquina / Equipamento:** [Nome extraído do arquivo]
+                            - **🔩 Peça / Material:** [Nome claro do item]
+                            - **🔢 Part Number / Código:** [Código encontrado no catálogo]
+                            - **📄 Página de Referência:** [Número da página]
+                            - **📝 Descrição / Detalhes:** [Breve resumo técnico]
+                            
+                            Exiba todos os resultados encontrados divididos por máquina. Seja organizado e objetivo.
+                            """
+                            
+                            response = client.chat.completions.create(
+                                model="openai/gpt-4o-mini",
+                                messages=[
+                                    {"role": "system", "content": prompt_sistema},
+                                    {"role": "user", "content": f"Busca do usuário: {termo_busca}\n\nTrechos dos Catálogos:\n{contexto}"}
+                                ],
+                                temperature=0.0
+                            )
+                            st.markdown("### 📋 Resultados Encontrados por Máquina:")
+                            st.markdown(response.choices[0].message.content)
     
+    else:
+        st.markdown("### 📂 Gerenciamento do Banco de Dados de Catálogos")
+        st.markdown("Faça o upload de novos catálogos em PDF para atualizar a base de fornecedores. **Dica:** Nomeie o arquivo PDF com o modelo da máquina (ex: `Socadora_Plasser_08_475.pdf`), pois esse nome será usado para identificar a origem da peça.")
+        
+        uploaded_pdfs = st.file_uploader("Carregar novos catálogos (PDF)", type=["pdf"], accept_multiple_files=True, key="upload_pdf_cat")
+        
+        if uploaded_pdfs:
+            for up_file in uploaded_pdfs:
+                caminho_salvamento = pasta_catalogo / up_file.name
+                with open(caminho_salvamento, "wb") as f:
+                    f.write(up_file.getbuffer())
+            st.success(f"{len(uploaded_pdfs)} catálogo(s) salvo(s) com sucesso!")
+            
+        st.divider()
+        st.markdown("#### PDFs atualmente na base:")
+        arquivos_atuais = list(pasta_catalogo.glob("**/*.pdf"))
+        if arquivos_atuais:
+            for arq in arquivos_atuais:
+                col_p1, col_p2 = st.columns([0.8, 0.2])
+                col_p1.text(f"📄 {arq.name}")
+                if col_p2.button("Excluir", key=f"del_cat_{arq.name}"):
+                    arq.unlink()
+                    st.success(f"Arquivo {arq.name} removido!")
+                    st.rerun()
+        else:
+            st.info("Nenhum PDF cadastrado no momento.")
     else:
         st.markdown("### 📂 Gerenciamento do Banco de Dados de Catálogos")
         st.markdown("Faça o upload de novos catálogos em PDF para atualizar a base de fornecedores.")
