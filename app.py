@@ -77,13 +77,13 @@ if st.session_state.sistema_ativo is None:
             
     with col2:        # <-- Aqui parece haver espaços extras ou desalinhamento
 
-        st.info("### 🔍 Catálogo de Peças (PDF)")
+        st.info("### 🔍 Catálogo de Peças")
         st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
         if st.button("Acessar Catálogo de Peças", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "catalogo_pecas"
             st.rerun()
             
-        st.info("### 📋 Código de Materiais (Interno)")
+        st.info("### 📋 Código de Materiais")
         st.markdown("Consulta em planilha com códigos internos da empresa para requisição de materiais.")
         if st.button("Acessar Código de Materiais", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "codigo_materiais"
