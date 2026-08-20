@@ -5,7 +5,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 import pypdf
-import pandas as pd
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -58,7 +57,7 @@ client = OpenAI(
 # --- TELA INICIAL: ESCOLHA DE SISTEMA ---
 if st.session_state.sistema_ativo is None:
     st.title("🚆 MIR - Plataforma de Inteligência Ferroviária")
-    st.markdown("### Selecione qual sistema de suporte técnico ou consulta você deseja acessar:")
+    st.markdown("### Selecione qual sistema de suporte técnico você deseja acessar:")
     
     col1, col2 = st.columns(2)
     
@@ -69,130 +68,13 @@ if st.session_state.sistema_ativo is None:
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
-        st.info("### 🔍 Catálogo de Peças (PDF)")
-        st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
-        if st.button("Acessar Catálogo de Peças", use_container_width=True):
-            st.session_state.sistema_ativo = "catalogo_pecas"
-            st.rerun()
-            
     with col2:
         st.info("### 🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
         if st.button("Acessar Máquinas de Via", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()
-            
-        st.info("### 📋 Código de Materiais (Interno)")
-        st.markdown("Consulta em planilha com códigos internos da empresa para requisição de materiais.")
-        if st.button("Acessar Código de Materiais", use_container_width=True):
-            st.session_state.sistema_ativo = "codigo_materiais"
-            st.rerun()
 
-# --- MÓDULO 3: BUSCADOR DE PEÇAS EM CATÁLOGOS (PDF) ---
-elif st.session_state.sistema_ativo == "catalogo_pecas":
-    if st.button("🏠 Voltar ao Menu Principal", type="secondary"):
-        st.session_state.sistema_ativo = None
-        st.rerun()
-        
-    st.title("🔍 Buscador de Peças em Catálogos")
-    st.markdown("Pesquise por nome, descrição ou part number em seus catálogos em PDF.")
-    
-    pasta_catalogo = Path("./Docs_Catalogos")
-    pasta_catalogo.mkdir(exist_ok=True)
-    
-    termo_busca = st.text_input("Digite o nome da peça ou Part Number:")
-    
-    if st.button("Buscar no Catálogo", type="primary"):
-        if not termo_busca:
-            st.warning("Por favor, digite um termo para buscar.")
-        else:
-            with st.spinner("Consultando catálogos e analisando com IA..."):
-                arquivos_pdf = list(pasta_catalogo.glob("**/*.pdf"))
-                if not arquivos_pdf:
-                    st.warning(f"Nenhum arquivo PDF encontrado na pasta `{pasta_catalogo}`. Adicione seus catálogos lá.")
-                else:
-                    # Extrai texto dos PDFs da pasta de catálogos
-                    contexto_partes = []
-                    for pdf_path in arquivos_pdf:
-                        reader = pypdf.PdfReader(str(pdf_path))
-                        for i, page in enumerate(reader.pages):
-                            texto = page.extract_text()
-                            if texto and (termo_busca.lower() in texto.lower() or len(contexto_partes) < 5):
-                                contexto_partes.append(f"Arquivo: {pdf_path.name} (Pág {i+1})\n{texto[:1000]}")
-                    
-                    contexto = "\n\n".join(contexto_partes[:6]) if contexto_partes else "Nenhum trecho direto localizado."
-                    
-                    prompt_sistema = """
-                    Você é um agente especialista em suprimentos, engenharia e peças industriais.
-                    Sua tarefa é analisar os trechos de catálogos fornecidos e identificar os itens correspondentes à busca do usuário.
-                    
-                    Para cada item encontrado, retorne de forma estruturada:
-                    - **Peça / Material:** [Nome claro do item]
-                    - **Part Number / Código:** [Código encontrado no catálogo]
-                    - **Descrição Resumida:** [Breve resumo técnico]
-                    
-                    Se não encontrar informações precisas, informe educadamente que o item não foi localizado.
-                    """
-                    
-                    response = client.chat.completions.create(
-                        model="openai/gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": f"Busca do usuário: {termo_busca}\n\nTrechos dos Catálogos:\n{contexto}"}
-                        ],
-                        temperature=0.0
-                    )
-                    st.markdown("### Resultados da IA:")
-                    st.markdown(response.choices[0].message.content)
-
-# --- MÓDULO 4: CÓDIGO DE MATERIAIS (PLANILHA INTERNA) ---
-elif st.session_state.sistema_ativo == "codigo_materiais":
-    if st.button("🏠 Voltar ao Menu Principal", type="secondary"):
-        st.session_state.sistema_ativo = None
-        st.rerun()
-        
-    st.title("📋 Buscador de Código de Materiais (Planilha Interna)")
-    st.markdown("Consulte os códigos internos da empresa na planilha de materiais.")
-    
-    caminho_excel = Path("materiais_internos.xlsx")
-    
-    termo_interno = st.text_input("Digite o nome ou código interno do material:")
-    
-    if st.button("Consultar Materiais", type="primary"):
-        if not termo_interno:
-            st.warning("Informe um termo para a consulta.")
-        else:
-            with st.spinner("Buscando na planilha interna..."):
-                if not caminho_excel.exists():
-                    st.error(f"O arquivo `{caminho_excel}` não foi encontrado na raiz do projeto. Por favor, adicione-o.")
-                else:
-                    df = pd.read_excel(caminho_excel)
-                    dados_amostra = df.astype(str).to_dict(orient="records")
-                    
-                    prompt_sistema = """
-                    Você é um assistente de almoxarifado e compras corporativas. 
-                    Sua função é receber a busca de um usuário e cruzar com os dados da planilha interna de materiais da empresa.
-                    
-                    Retorne os itens correspondentes de forma limpa e estruturada:
-                    - **Código Interno para Requisição:** [...]
-                    - **Descrição do Material:** [...]
-                    - **Detalhes Adicionais:** [...]
-                    
-                    Seja direto e objetivo.
-                    """
-                    
-                    response = client.chat.completions.create(
-                        model="openai/gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": f"Busca: {termo_interno}\n\nDados da Planilha:\n{str(dados_amostra[:150])}"}
-                        ],
-                        temperature=0.0
-                    )
-                    st.markdown("### Resultados Encontrados:")
-                    st.markdown(response.choices[0].message.content)
-
-# --- MÓDULOS DE SUPORTE TÉCNICO (Locomotivas e Máquinas de Via) ---
 else:
     # Configuração dinâmica baseada no sistema escolhido
     if st.session_state.sistema_ativo == "locomotivas":
