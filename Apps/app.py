@@ -38,20 +38,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Função de busca inteligente e flexível para planilhas
-def buscar_materiais(df, termo_busca):
-    if not termo_busca or df.empty:
-        return pd.DataFrame()
-    
-    termos = termo_busca.lower().split()
-    df_busca = df.astype(str).apply(lambda x: ' '.join(x).str.lower(), axis=1)
-    
-    mascara = pd.Series(True, index=df.index)
-    for termo in termos:
-        mascara &= df_busca.str.contains(termo, na=False, regex=False)
-        
-    return df[mascara]
-
 # Inicialização dos componentes de IA (com cache)
 @st.cache_resource
 def carregar_componentes_ia():
@@ -89,7 +75,8 @@ if st.session_state.sistema_ativo is None:
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
-    with col2:
+    with col2:        # <-- Aqui parece haver espaços extras ou desalinhamento
+
         st.info("### 🔍 Catálogo de Peças")
         st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
         if st.button("Acessar Catálogo de Peças", use_container_width=True, type="primary"):
@@ -129,6 +116,7 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
                     else:
                         contexto_partes = []
                         for pdf_path in arquivos_pdf:
+                            # O nome do arquivo PDF serve para identificar o modelo da máquina/equipamento
                             nome_modelo_maquina = pdf_path.stem.replace("_", " ").replace("-", " ")
                             reader = pypdf.PdfReader(str(pdf_path))
                             for i, page in enumerate(reader.pages):
@@ -139,7 +127,7 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
                         if not contexto_partes:
                             st.info("Nenhum trecho direto correspondente foi encontrado nos arquivos. Tente um termo mais genérico.")
                         else:
-                            contexto = "\n\n".join(contexto_partes[:10])
+                            contexto = "\n\n".join(contexto_partes[:10]) # Limita para enviar os melhores trechos
                             
                             prompt_sistema = """
                             Você é um agente especialista em suprimentos, engenharia e peças industriais ferroviárias.
@@ -208,7 +196,7 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
     aba_mat = st.radio("Navegação Materiais", ["📋 Realizar Consulta", "📂 Gerenciar Planilha de Dados"], horizontal=True)
     
     if aba_mat == "📋 Realizar Consulta":
-        termo_interno = st.text_input("Digite o nome ou código interno do material (ex: Sensor DSS):")
+        termo_interno = st.text_input("Digite o nome ou código interno do material:")
         
         if st.button("Consultar Materiais", type="primary"):
             if not termo_interno:
@@ -219,19 +207,34 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
                         st.error(f"Nenhuma planilha encontrada em `{caminho_excel}`. Vá na aba 'Gerenciar Planilha de Dados' para fazer o upload.")
                     else:
                         df = pd.read_excel(caminho_excel)
-                        df.columns = df.columns.str.strip() # Limpa espaços nas colunas
+                        dados_amostra = df.astype(str).to_dict(orient="records")
                         
-                        # Executa a busca flexível otimizada
-                        resultado = buscar_materiais(df, termo_interno)
+                        prompt_sistema = """
+                        Você é um assistente de almoxarifado e compras corporativas. 
+                        Sua função é receber a busca de um usuário e cruzar com os dados da planilha interna de materiais da empresa.
                         
-                        if not resultado.empty:
-                            st.success(f"Foram encontrados {len(resultado)} item(ns):")
-                            st.dataframe(resultado, use_container_width=True)
-                        else:
-                            st.warning(f"Nenhum item correspondente a '{termo_interno}' foi encontrado na planilha.")
+                        Retorne os itens correspondentes de forma limpa e estruturada:
+                        - **Código Interno para Requisição:** [...]
+                        - **Descrição do Material:** [...]
+                        - **Detalhes Adicionais:** [...]
+                        
+                        Seja direto e objetivo.
+                        """
+                        
+                        response = client.chat.completions.create(
+                            model="openai/gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": prompt_sistema},
+                                {"role": "user", "content": f"Busca: {termo_interno}\n\nDados da Planilha:\n{str(dados_amostra[:150])}"}
+                            ],
+                            temperature=0.0
+                        )
+                        st.markdown("### Resultados Encontrados:")
+                        st.markdown(response.choices[0].message.content)
+                        
     else:
         st.markdown("### 📂 Gerenciamento da Planilha de Materiais")
-        st.markdown("Faça o upload da planilha atualizada contendo os códigos internos (`.xlsx` or `.xls`).")
+        st.markdown("Faça o upload da planilha atualizada contendo os códigos internos (`.xlsx` ou `.xls`).")
         
         uploaded_excel = st.file_uploader("Carregar planilha de materiais", type=["xlsx", "xls"], key="upload_excel_mat")
         
@@ -254,6 +257,7 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
 
 # --- MÓDULOS DE SUPORTE TÉCNICO (Locomotivas e Máquinas de Via) ---
 else:
+    # Configuração dinâmica baseada no sistema escolhido
     if st.session_state.sistema_ativo == "locomotivas":
         PASTA_BASE_MANUAIS = Path("./Docs_Locomotivas")
         collection_name = "mir_suporte_locomotivas"
@@ -298,6 +302,7 @@ else:
             print(f"Erro ao indexar {caminho_arquivo}: {e}")
             return False
 
+    # --- GESTÃO DE SESSÕES ---
     chave_chats_duvidas = f"chats_duvidas_{st.session_state.sistema_ativo}"
     chave_chat_atual_duvidas = f"chat_atual_duvidas_{st.session_state.sistema_ativo}"
     chave_chats_falhas = f"chats_falhas_{st.session_state.sistema_ativo}"
@@ -313,6 +318,7 @@ else:
     if chave_chat_atual_falhas not in st.session_state:
         st.session_state[chave_chat_atual_falhas] = 0
 
+    # --- SIDEBAR MODERNA ---
     with st.sidebar:
         if st.button("🏠 Voltar ao Menu Principal", use_container_width=True, type="secondary"):
             st.session_state.sistema_ativo = None
@@ -394,6 +400,7 @@ else:
             
         st.info(f"**Status:** Sistema Pronto\n\n📁 {total_pdfs} PDFs encontrados\n📚 {total_trechos} trechos ativos")
 
+    # --- ABA 1: DÚVIDAS TÉCNICAS ---
     if aba_selecionada == "📖 Dúvidas Técnicas":
         st.markdown(f"### 📖 Dúvidas Técnicas - {st.session_state.sistema_ativo.capitalize()}")
         
@@ -462,6 +469,7 @@ else:
                         st.error(erro_msg)
                         chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
 
+    # --- ABA 2: ANÁLISE DE FALHAS ---
     elif aba_selecionada == "⚙️ Análise de Falhas":
         st.markdown(f"### ⚙️ Análise de Falhas - {st.session_state.sistema_ativo.capitalize()}")
         
@@ -539,6 +547,7 @@ else:
                         st.error(erro_msg)
                         chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
 
+    # --- ABA 3: ADICIONAR CONHECIMENTO ---
     elif aba_selecionada == "📂 Adicionar Conhecimento":
         st.markdown(f"# 📂 Adicionar Conhecimento - {st.session_state.sistema_ativo.capitalize()}")
         st.markdown("Carregue novos manuais em PDF para expandir imediatamente a base de conhecimento.")
