@@ -17,7 +17,7 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES EM VERMELHO) ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES EM VERMELHO E UNIFORMES) ---
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] * {
@@ -29,7 +29,7 @@ st.markdown("""
         .stChatInput textarea {
             font-size: 16px !important;
         }
-        /* Padronização de TODOS os botões para vermelho */
+        /* Padronização de TODOS os botões para vermelho com largura uniforme */
         .stButton button, div.stLinkButton a {
             width: 100% !important;
             background-color: #ff4b4b !important;
@@ -39,6 +39,9 @@ st.markdown("""
             font-weight: 600 !important;
             text-align: center !important;
             padding: 0.5rem 1rem !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
         }
         .stButton button:hover, div.stLinkButton a:hover {
             background-color: #ff2b2b !important;
@@ -73,14 +76,14 @@ if st.session_state.sistema_ativo is None:
         st.markdown("---")
         st.subheader("🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("Acessar Locomotivas", key="btn_loc"):
+        if st.button("🚂 Acessar Locomotivas", key="btn_loc"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
         st.markdown("---")
         st.subheader("🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("Acessar Máquinas de Via", key="btn_via"):
+        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
