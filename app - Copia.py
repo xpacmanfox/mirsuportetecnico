@@ -83,26 +83,26 @@ if st.session_state.sistema_ativo is None:
     with col1:
         st.info("### 🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("Acessar Locomotivas", width="stretch", type="primary"):
+        if st.button("Acessar Locomotivas", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
         st.info("### 🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("Acessar Máquinas de Via", width="stretch", type="primary"):
+        if st.button("Acessar Máquinas de Via", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
     with col2:
         st.info("### 🔍 Catálogo de Peças")
         st.markdown("Buscador inteligente de peças e part numbers em catálogos de fornecedores.")
-        if st.button("Acessar Catálogo de Peças", width="stretch", type="primary"):
+        if st.button("Acessar Catálogo de Peças", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "catalogo_pecas"
             st.rerun()
             
         st.info("### 📋 Código de Materiais")
         st.markdown("Consulta em planilha com códigos internos da empresa para requisição de materiais.")
-        if st.button("Acessar Código de Materiais", width="stretch", type="primary"):
+        if st.button("Acessar Código de Materiais", use_container_width=True, type="primary"):
             st.session_state.sistema_ativo = "codigo_materiais"
             st.rerun()
 
@@ -223,18 +223,19 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
                         st.error(f"Nenhuma planilha encontrada em `{caminho_excel}`. Vá na aba 'Gerenciar Planilha de Dados' para fazer o upload.")
                     else:
                         df = pd.read_excel(caminho_excel)
-                        df.columns = df.columns.str.strip()
+                        df.columns = df.columns.str.strip() # Limpa espaços nas colunas
                         
+                        # Executa a busca flexível otimizada
                         resultado = buscar_materiais(df, termo_interno)
                         
                         if not resultado.empty:
                             st.success(f"Foram encontrados {len(resultado)} item(ns):")
-                            st.dataframe(resultado, width="stretch")
+                            st.dataframe(resultado, use_container_width=True)
                         else:
                             st.warning(f"Nenhum item correspondente a '{termo_interno}' foi encontrado na planilha.")
     else:
         st.markdown("### 📂 Gerenciamento da Planilha de Materiais")
-        st.markdown("Faça o upload da planilha atualizada contendo os códigos internos (`.xlsx` ou `.xls`).")
+        st.markdown("Faça o upload da planilha atualizada contendo os códigos internos (`.xlsx` or `.xls`).")
         
         uploaded_excel = st.file_uploader("Carregar planilha de materiais", type=["xlsx", "xls"], key="upload_excel_mat")
         
@@ -249,7 +250,7 @@ elif st.session_state.sistema_ativo == "codigo_materiais":
             try:
                 df_preview = pd.read_excel(caminho_excel)
                 st.markdown("#### Pré-visualização dos dados:")
-                st.dataframe(df_preview.head(10), width="stretch")
+                st.dataframe(df_preview.head(10), use_container_width=True)
             except Exception as e:
                 st.error(f"Erro ao ler a planilha: {e}")
         else:
@@ -317,7 +318,7 @@ else:
         st.session_state[chave_chat_atual_falhas] = 0
 
     with st.sidebar:
-        if st.button("🏠 Voltar ao Menu Principal", width="stretch", type="secondary"):
+        if st.button("🏠 Voltar ao Menu Principal", use_container_width=True, type="secondary"):
             st.session_state.sistema_ativo = None
             st.rerun()
 
@@ -336,7 +337,7 @@ else:
         
         if aba_selecionada == "📖 Dúvidas Técnicas":
             st.markdown("### 🕒 Histórico de Dúvidas")
-            if st.button("➕ Novo Chat de Dúvidas", width="stretch"):
+            if st.button("➕ Novo Chat de Dúvidas", use_container_width=True):
                 lista_chats = st.session_state[chave_chats_duvidas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -349,7 +350,7 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_duvidas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}", width="stretch"):
+                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}", use_container_width=True):
                     st.session_state[chave_chat_atual_duvidas] = i
                     st.rerun()
                 if col_h2.button("🗑️", key=f"del_duvida_{i}"):
@@ -363,7 +364,7 @@ else:
 
         elif aba_selecionada == "⚙️ Análise de Falhas":
             st.markdown("### 🕒 Histórico de Falhas")
-            if st.button("➕ Novo Chat de Falhas", width="stretch"):
+            if st.button("➕ Novo Chat de Falhas", use_container_width=True):
                 lista_chats = st.session_state[chave_chats_falhas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -376,7 +377,7 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_falhas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}", width="stretch"):
+                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}", use_container_width=True):
                     st.session_state[chave_chat_atual_falhas] = i
                     st.rerun()
                 if col_h2.button("🗑️", key=f"del_falha_{i}"):
@@ -561,7 +562,7 @@ else:
 
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            if st.button("🧠 Indexar Novos PDFs da Pasta", width="stretch", type="primary"):
+            if st.button("🧠 Indexar Novos PDFs da Pasta", use_container_width=True, type="primary"):
                 arquivos = list(PASTA_BASE_MANUAIS.glob("**/*.pdf"))
                 if not arquivos:
                     st.warning(f"Nenhum arquivo PDF encontrado em {PASTA_BASE_MANUAIS}.")
@@ -575,7 +576,7 @@ else:
                     st.rerun()
 
         with col_btn2:
-            if st.button("🗑️ Limpar Base de Dados Indexada", width="stretch"):
+            if st.button("🗑️ Limpar Base de Dados Indexada", use_container_width=True):
                 try:
                     chroma_client.delete_collection(collection_name)
                     chroma_client.get_or_create_collection(name=collection_name)
