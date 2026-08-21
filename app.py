@@ -17,27 +17,26 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA AUMENTAR AS FONTES ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL ---
 st.markdown("""
     <style>
-        /* Aumenta a fonte do menu lateral (sidebar) */
         section[data-testid="stSidebar"] * {
             font-size: 16px !important;
         }
-        
-        /* Aumenta a fonte das mensagens do chat (tanto usuário quanto assistente) */
         .stChatMessage * {
             font-size: 17px !important;
         }
-        
-        /* Aumenta a fonte do campo de texto (chat input) */
         .stChatInput textarea {
             font-size: 16px !important;
+        }
+        /* Padronização dos botões para manter o visual limpo */
+        .stButton button {
+            width: 100%;
+            border-radius: 6px;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Inicialização dos componentes de IA (com cache)
 @st.cache_resource
 def carregar_componentes_ia():
     encoder = SentenceTransformer("all-MiniLM-L6-v2")
@@ -46,7 +45,6 @@ def carregar_componentes_ia():
 
 encoder, chroma_client = carregar_componentes_ia()
 
-# Configuração da API do OpenRouter
 OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY") or os.getenv("OPENROUTER_API_KEY")
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -62,29 +60,31 @@ if st.session_state.sistema_ativo is None:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.info("### 🚂 Locomotivas")
+        st.markdown("---")
+        st.subheader("🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("Acessar Locomotivas", type="primary", use_container_width=True):
+        if st.button("Acessar Locomotivas", key="btn_loc"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
-        st.info("### 🛤️ Máquinas de Via")
+        st.markdown("---")
+        st.subheader("🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("Acessar Máquinas de Via", type="primary", use_container_width=True):
+        if st.button("Acessar Máquinas de Via", key="btn_via"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
     with col2:
-        st.info("### 📦 Central de Catálogos e Materiais")
+        st.markdown("---")
+        st.subheader("📦 Central de Catálogos e Materiais")
         st.markdown("Acesse o sistema externo de consulta de catálogos em PDF (Locomotivas e Máquinas) e códigos internos.")
         st.link_button(
             "🔗 Ir para Catálogos e Materiais", 
             "https://mirmaterial.streamlit.app/", 
-            type="secondary", 
             use_container_width=True
         )
 
-# --- MÓDULOS DE SUPORTE TÉCNICO (Locomotivas e Máquinas de Via) ---
+# --- MÓDULOS DE SUPORTE TÉCNICO ---
 else:
     if st.session_state.sistema_ativo == "locomotivas":
         PASTA_BASE_MANUAIS = Path("./Docs_Locomotivas")
@@ -146,7 +146,7 @@ else:
         st.session_state[chave_chat_atual_falhas] = 0
 
     with st.sidebar:
-        if st.button("🏠 Voltar ao Menu Principal", type="secondary", use_container_width=True):
+        if st.button("🏠 Voltar ao Menu Principal", use_container_width=True):
             st.session_state.sistema_ativo = None
             st.rerun()
 
@@ -154,7 +154,6 @@ else:
         st.link_button(
             "📦 Catálogos e Códigos", 
             "https://mirmaterial.streamlit.app/", 
-            type="primary", 
             use_container_width=True
         )
 
@@ -272,11 +271,6 @@ else:
                             "Você é o Mir, um assistente especialista sênior em engenharia e manutenção ferroviária. "
                             "Sua função principal é atuar como um consultor técnico de suporte, respondendo a dúvidas, "
                             "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados na base de dados.\n\n"
-                            "DIRETRIZES DE ATUAÇÃO:\n"
-                            "1. Fidelidade ao Contexto: Utilize os trechos dos manuais fornecidos abaixo como sua fonte primária de verdade técnica.\n"
-                            "2. Clareza e Estrutura: Explique os conceitos de forma didática, organizada em tópicos (bullet points) ou passos.\n"
-                            "3. Transparência em Caso de Omissão: Se a resposta exata não constar, informe educadamente e dê uma orientação geral ressalvando que não consta no manual.\n"
-                            "4. Citação de Fontes: Sempre cite o nome do documento (PDF) correspondente ao lado da informação.\n\n"
                             f"CONTEXTO TÉCNICO EXTRAÍDO DOS MANUAIS:\n{contexto}"
                         )
 
@@ -344,17 +338,6 @@ else:
 
                         system_prompt = (
                             "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
-                            "Sua linguagem é técnica, direta, prática e corporativa de oficina (voltada para técnicos e mecânicos).\n\n"
-                            "DIRETRIZES DE RESPOSTA:\n"
-                            "1. IDENTIFICAÇÃO DO MODELO: Preste atenção se o usuário citou o modelo do equipamento na pergunta.\n"
-                            "2. ANÁLISE DE DADOS: Se o usuário descreveu parâmetros, analise detalhadamente.\n"
-                            "3. HIPÓTESES PRIORIZADAS: Liste as prováveis causas em ordem decrescente de probabilidade.\n"
-                            "4. AÇÃO PRÁTICA: O que o técnico deve fazer AGORA?\n\n"
-                            "ESTRUTURA OBRIGATÓRIA DA RESPOSTA:\n"
-                            "### 🔎 Interpretação do Evento\n"
-                            "### 📊 Análise das Variáveis\n"
-                            "### 💡 Minha Hipótese de Diagnóstico\n"
-                            "### 🛠️ Plano de Ação (Checklist de Oficina)\n\n"
                             f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
                             f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                         )
@@ -398,7 +381,7 @@ else:
 
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            if st.button("🧠 Indexar Novos PDFs da Pasta", type="primary"):
+            if st.button("🧠 Indexar Novos PDFs da Pasta"):
                 arquivos = list(PASTA_BASE_MANUAIS.glob("**/*.pdf"))
                 if not arquivos:
                     st.warning(f"Nenhum arquivo PDF encontrado em {PASTA_BASE_MANUAIS}.")
