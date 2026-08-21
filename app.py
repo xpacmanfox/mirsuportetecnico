@@ -152,14 +152,16 @@ else:
     chave_chat_atual_falhas = f"chat_atual_falhas_{st.session_state.sistema_ativo}"
 
     if chave_chats_duvidas not in st.session_state:
-    st.session_state[chave_chats_duvidas] = [{"id": 1, "titulo": "Nova Dúvida", "mensagens": [{"role": "assistant", "content": msg_inicial_duvida}]}]
-if chave_chat_atual_duvidas not in st.session_state:
-    st.session_state[chave_chat_atual_duvidas] = 0
+        st.session_state[chave_chats_duvidas] = [{"id": 1, "titulo": "Nova Dúvida", "mensagens": [{"role": "assistant", "content": msg_inicial_duvida}]}]
+    
+    if chave_chat_atual_duvidas not in st.session_state:
+        st.session_state[chave_chat_atual_duvidas] = 0
 
-if chave_chats_falhas not in st.session_state:
-    st.session_state[chave_chats_falhas] = [{"id": 1, "titulo": "Nova Falha", "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]}]
-if chave_chat_atual_falhas not in st.session_state:
-    st.session_state[chave_chat_atual_falhas] = 0
+    if chave_chats_falhas not in st.session_state:
+        st.session_state[chave_chats_falhes] = [{"id": 1, "titulo": "Nova Falha", "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]}]
+    
+    if chave_chat_atual_falhas not in st.session_state:
+        st.session_state[chave_chat_atual_falhas] = 0
 
     with st.sidebar:
         if st.button("🏠 Voltar ao Menu Principal", use_container_width=True):
