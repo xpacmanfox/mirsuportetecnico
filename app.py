@@ -17,25 +17,28 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES VERMELHOS) ---
 st.markdown("""
     <style>
-        section[data-testid="stSidebar"] * { font-size: 16px !important; }
-        .stChatMessage * { font-size: 17px !important; }
-        .stChatInput textarea { font-size: 16px !important; }
-        div.stButton, div.stLinkButton { width: 100% !important; }
+        section[data-testid="stSidebar"] * {
+            font-size: 16px !important;
+        }
+        .stChatMessage * {
+            font-size: 17px !important;
+        }
+        .stChatInput textarea {
+            font-size: 16px !important;
+        }
         .stButton button, div.stLinkButton a {
-            width: 100% !important;
             background-color: #ff4b4b !important;
             color: white !important;
             border-radius: 6px !important;
             border: none !important;
             font-weight: 600 !important;
-            text-align: center !important;
-            padding: 0.5rem 1rem !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
+        }
+        .stButton button:hover, div.stLinkButton a:hover {
+            background-color: #ff2b2b !important;
+            color: white !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -55,62 +58,84 @@ client = OpenAI(
     default_headers={"HTTP-Referer": "http://localhost", "X-Title": "Mir Central"}
 )
 
-# --- TELA INICIAL ---
+# --- TELA INICIAL: ESCOLHA DE SISTEMA ---
 if st.session_state.sistema_ativo is None:
     st.title("🚆 MIR - Plataforma de Inteligência Ferroviária")
     st.markdown("### Selecione qual sistema de suporte técnico ou consulta você deseja acessar:")
     
     col1, col2 = st.columns(2)
+    
     with col1:
+        st.markdown("---")
         st.subheader("🚂 Locomotivas")
-        if st.button("🚂 Acessar Locomotivas"):
+        st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
+        if st.button("🚂 Acessar Locomotivas", key="btn_loc", width="stretch"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
+            
+        st.markdown("---")
         st.subheader("🛤️ Máquinas de Via")
-        if st.button("🛤️ Acessar Máquinas de Via"):
+        st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
+        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via", width="stretch"):
             st.session_state.sistema_ativo = "maquinas_via"
-            st.rerun()
+            st.rerun()        
+            
     with col2:
-        st.subheader("📦 Central de Catálogos")
-        st.link_button("🔗 Ir para Catálogos e Materiais", "https://mirmaterial.streamlit.app/")
+        st.markdown("---")
+        st.subheader("📦 Central de Catálogos e Materiais")
+        st.markdown("Acesse o sistema externo de consulta de catálogos em PDF (Locomotivas e Máquinas) e códigos internos.")
+        st.link_button(
+            "🔗 Ir para Catálogos e Materiais", 
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
+        )
 
+# --- MÓDULOS DE SUPORTE TÉCNICO ---
 else:
-    # --- CONFIGURAÇÃO DE MÓDULOS ---
     if st.session_state.sistema_ativo == "locomotivas":
         PASTA_BASE_MANUAIS = Path("./Docs_Locomotivas")
         collection_name = "mir_suporte_locomotivas"
         titulo_sidebar = "🚆 MIR - Locomotivas"
         msg_inicial_duvida = "Olá. Use este canal para retirar dúvidas gerais sobre locomotivas."
-        msg_inicial_falha = "Olá. Descreva a falha observada na locomotiva e o modelo."
+        msg_inicial_falha = "Olá. Descreva a falha observada na locomotiva e o modelo (ex: AC44)."
     else:
         PASTA_BASE_MANUAIS = Path("./Docs_MaquinasVia")
         collection_name = "mir_suporte_via"
         titulo_sidebar = "🛤️ MIR - Máquinas de Via"
         msg_inicial_duvida = "Olá. Use este canal para retirar dúvidas sobre máquinas de via."
-        msg_inicial_falha = "Olá. Descreva a falha na máquina de via."
+        msg_inicial_falha = "Olá. Descreva a falha na máquina de via (ex: Socadora Plasser)."
 
     PASTA_BASE_MANUAIS.mkdir(exist_ok=True)
     collection = chroma_client.get_or_create_collection(name=collection_name)
 
-    # --- FUNÇÃO INDEXAR ---
     def indexar_arquivo(caminho_arquivo):
         try:
             nome_arq = caminho_arquivo.name
-            collection.delete(where={"source": nome_arq})
+            existing = collection.get(where={"source": nome_arq})
+            if existing and len(existing.get('ids', [])) > 0:
+                collection.delete(where={"source": nome_arq})
+            
             reader = pypdf.PdfReader(str(caminho_arquivo))
+            total_paginas = len(reader.pages)
+            if total_paginas == 0:
+                return False
+
             for i, page in enumerate(reader.pages):
                 texto = page.extract_text()
                 if texto and texto.strip():
+                    page_id = f"{nome_arq}_p{i}"
+                    embedding = encoder.encode([texto]).tolist()
                     collection.upsert(
-                        ids=[f"{nome_arq}_p{i}"],
-                        embeddings=[encoder.encode([texto]).tolist()[0]],
+                        ids=[page_id],
+                        embeddings=embedding,
                         documents=[texto],
                         metadatas=[{"source": nome_arq, "page": i}]
                     )
             return True
-        except Exception: return False
+        except Exception as e:
+            print(f"Erro ao indexar {caminho_arquivo}: {e}")
+            return False
 
-    # --- GESTÃO DE ESTADO (CORRIGIDO) ---
     chave_chats_duvidas = f"chats_duvidas_{st.session_state.sistema_ativo}"
     chave_chat_atual_duvidas = f"chat_atual_duvidas_{st.session_state.sistema_ativo}"
     chave_chats_falhas = f"chats_falhas_{st.session_state.sistema_ativo}"
@@ -126,9 +151,261 @@ else:
     if chave_chat_atual_falhas not in st.session_state:
         st.session_state[chave_chat_atual_falhas] = 0
 
-    # --- SIDEBAR E LÓGICA DE CHAT ---
     with st.sidebar:
-        if st.button("🏠 Voltar ao Menu Principal"):
+        if st.button("🏠 Voltar ao Menu Principal", width="stretch"):
             st.session_state.sistema_ativo = None
             st.rerun()
-        # ... (O restante da sua lógica de sidebar permanece a mesma, apenas certifique-se de manter a indentação de 4 espaços)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.link_button(
+            "📦 Catálogos e Códigos", 
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
+        )
+
+        st.divider()
+        st.markdown(f"## {titulo_sidebar}")
+        st.caption("Inteligência em Manutenção")
+        st.divider()
+
+        aba_selecionada = st.radio(
+            "Navegação",
+            ["📖 Dúvidas Técnicas", "⚙️ Análise de Falhas", "📂 Adicionar Conhecimento"],
+            label_visibility="collapsed"
+        )
+
+        st.divider()
+        
+        if aba_selecionada == "📖 Dúvidas Técnicas":
+            st.markdown("### 🕒 Histórico de Dúvidas")
+            if st.button("➕ Novo Chat de Dúvidas", width="stretch"):
+                lista_chats = st.session_state[chave_chats_duvidas]
+                novo_id = len(lista_chats) + 1
+                lista_chats.append({
+                    "id": novo_id, 
+                    "titulo": f"Dúvida {novo_id}", 
+                    "mensagens": [{"role": "assistant", "content": msg_inicial_duvida}]
+                })
+                st.session_state[chave_chat_atual_duvidas] = len(lista_chats) - 1
+                st.rerun()
+
+            for i, chat in enumerate(st.session_state[chave_chats_duvidas][-10:]):
+                col_h1, col_h2 = st.columns([0.8, 0.2])
+                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}", width="stretch"):
+                    st.session_state[chave_chat_atual_duvidas] = i
+                    st.rerun()
+                if col_h2.button("🗑️", key=f"del_duvida_{i}", width="stretch"):
+                    lista_chats = st.session_state[chave_chats_duvidas]
+                    if len(lista_chats) > 1:
+                        del lista_chats[i]
+                        st.session_state[chave_chat_atual_duvidas] = max(0, i - 1)
+                        st.rerun()
+                    else:
+                        st.warning("Mínimo de 1 chat.")
+
+        elif aba_selecionada == "⚙️ Análise de Falhas":
+            st.markdown("### 🕒 Histórico de Falhas")
+            if st.button("➕ Novo Chat de Falhas", width="stretch"):
+                lista_chats = st.session_state[chave_chats_falhas]
+                novo_id = len(lista_chats) + 1
+                lista_chats.append({
+                    "id": novo_id, 
+                    "titulo": f"Falha {novo_id}", 
+                    "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]
+                })
+                st.session_state[chave_chat_atual_falhas] = len(lista_chats) - 1
+                st.rerun()
+
+            for i, chat in enumerate(st.session_state[chave_chats_falhas][-10:]):
+                col_h1, col_h2 = st.columns([0.8, 0.2])
+                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}", width="stretch"):
+                    st.session_state[chave_chat_atual_falhas] = i
+                    st.rerun()
+                if col_h2.button("🗑️", key=f"del_falha_{i}", width="stretch"):
+                    lista_chats = st.session_state[chave_chats_falhas]
+                    if len(lista_chats) > 1:
+                        del lista_chats[i]
+                        st.session_state[chave_chat_atual_falhas] = max(0, i - 1)
+                        st.rerun()
+                    else:
+                        st.warning("Mínimo de 1 chat.")
+
+        st.divider()
+        total_pdfs = len(list(PASTA_BASE_MANUAIS.glob("**/*.pdf")))
+        try:
+            total_trechos = collection.count()
+        except Exception:
+            total_trechos = 0
+            
+        st.info(f"**Status:** Sistema Pronto\n\n📁 {total_pdfs} PDFs encontrados\n📚 {total_trechos} trechos ativos")
+
+    if aba_selecionada == "📖 Dúvidas Técnicas":
+        st.markdown(f"### 📖 Dúvidas Técnicas - {st.session_state.sistema_ativo.capitalize()}")
+        
+        chat_idx = st.session_state[chave_chat_atual_duvidas]
+        chat_atual = st.session_state[chave_chats_duvidas][chat_idx]
+
+        for msg in chat_atual["mensagens"]:
+            with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
+                st.markdown(msg["content"])
+
+        pergunta = st.chat_input("Qual dúvida técnica você tem hoje?", key="input_duvida")
+
+        if pergunta:
+            chat_atual["mensagens"].append({"role": "user", "content": pergunta})
+            
+            if chat_atual["titulo"].startswith("Nova Dúvida") or chat_atual["titulo"].startswith("Dúvida"):
+                chat_atual["titulo"] = pergunta[:25] + "..." if len(pergunta) > 25 else pergunta
+
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(pergunta)
+
+            with st.chat_message("assistant", avatar="🔹"):
+                with st.spinner("Realizando busca profunda nos manuais..."):
+                    try:
+                        pergunta_vetor = encoder.encode([pergunta]).tolist()
+                        resultados = collection.query(query_embeddings=pergunta_vetor, n_results=12)
+                        
+                        contexto_partes = []
+                        if resultados and resultados["documents"] and resultados["documents"][0]:
+                            for doc, meta in zip(resultados["documents"][0], resultados["metadatas"][0]):
+                                contexto_partes.append(f"Fonte: {meta.get('source', 'Desconhecido')} | Conteúdo: {doc}")
+                        
+                        contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado."
+                        
+                        system_prompt = (
+                            "Você é o Mir, um assistente especialista sênior em engenharia e manutenção ferroviária. "
+                            "Sua função principal é atuar como um consultor técnico de suporte, respondendo a dúvidas, "
+                            "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados na base de dados.\n\n"
+                            f"CONTEXTO TÉCNICO EXTRAÍDO DOS MANUAIS:\n{contexto}"
+                        )
+
+                        messages_payload = [{"role": "system", "content": system_prompt}]
+                        for m in chat_atual["mensagens"][:-1]:
+                            messages_payload.append({"role": m["role"], "content": m["content"]})
+                        
+                        messages_payload.append({"role": "user", "content": chat_atual["mensagens"][-1]["content"]})
+
+                        response = client.chat.completions.create(
+                            model="openai/gpt-4o-mini",
+                            messages=messages_payload,
+                            temperature=0.0
+                        )
+                        
+                        resposta_ia = response.choices[0].message.content
+                        st.markdown(resposta_ia)
+                        chat_atual["mensagens"].append({"role": "assistant", "content": resposta_ia})
+                        st.rerun()
+                        
+                    except Exception as e:
+                        erro_msg = f"Erro na consulta: {e}"
+                        st.error(erro_msg)
+                        chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
+
+    elif aba_selecionada == "⚙️ Análise de Falhas":
+        st.markdown(f"### ⚙️ Análise de Falhas - {st.session_state.sistema_ativo.capitalize()}")
+        
+        chat_idx = st.session_state[chave_chat_atual_falhas]
+        chat_atual = st.session_state[chave_chats_falhas][chat_idx]
+
+        for msg in chat_atual["mensagens"]:
+            with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
+                st.markdown(msg["content"])
+
+        pergunta = st.chat_input("Descreva o equipamento, sistema e falha observada...", key="input_falha")
+
+        if pergunta:
+            chat_atual["mensagens"].append({"role": "user", "content": pergunta})
+            
+            if chat_atual["titulo"].startswith("Nova Falha") or chat_atual["titulo"].startswith("Falha"):
+                chat_atual["titulo"] = pergunta[:25] + "..." if len(pergunta) > 25 else pergunta
+
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(pergunta)
+
+            with st.chat_message("assistant", avatar="🔹"):
+                with st.spinner("Analisando falha, parâmetros e manuais..."):
+                    try:
+                        pergunta_vetor = encoder.encode([pergunta]).tolist()
+                        resultados = collection.query(query_embeddings=pergunta_vetor, n_results=6)
+                        
+                        contexto_partes = []
+                        fontes_encontradas = set()
+                        if resultados and resultados["documents"] and resultados["documents"][0]:
+                            docs = resultados["documents"][0]
+                            metas = resultados["metadatas"][0] if resultados.get("metadatas") else [{}] * len(docs)
+                            for doc, meta in zip(docs, metas):
+                                contexto_partes.append(doc)
+                                if meta and "source" in meta:
+                                    fontes_encontradas.add(meta["source"])
+                        
+                        contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado na base de PDFs local."
+                        fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
+
+                        system_prompt = (
+                            "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
+                            f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
+                            f"Fontes/Documentos disponíveis para referência: {fontes_str}"
+                        )
+
+                        messages_payload = [{"role": "system", "content": system_prompt}]
+                        for m in chat_atual["mensagens"][:-1]:
+                            messages_payload.append({"role": m["role"], "content": m["content"]})
+                        
+                        messages_payload.append({"role": "user", "content": chat_atual["mensagens"][-1]["content"]})
+
+                        response = client.chat.completions.create(
+                            model="openai/gpt-4o-mini",
+                            messages=messages_payload,
+                            temperature=0.1
+                        )
+                        resposta_ia = response.choices[0].message.content
+                        st.markdown(resposta_ia)
+                        chat_atual["mensagens"].append({"role": "assistant", "content": resposta_ia})
+                        st.rerun()
+                    except Exception as e:
+                        erro_msg = f"Erro no pipeline de IA: {e}"
+                        st.error(erro_msg)
+                        chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
+
+    elif aba_selecionada == "📂 Adicionar Conhecimento":
+        st.markdown(f"# 📂 Adicionar Conhecimento - {st.session_state.sistema_ativo.capitalize()}")
+        st.markdown("Carregue novos manuais em PDF para expandir imediatamente a base de conhecimento.")
+
+        uploaded_files = st.file_uploader(
+            "Carregar manuais técnicos (PDF)", type=["pdf"], accept_multiple_files=True
+        )
+
+        if uploaded_files:
+            for uploaded_file in uploaded_files:
+                caminho_salvamento = PASTA_BASE_MANUAIS / uploaded_file.name
+                with open(caminho_salvamento, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+            st.success(f"{len(uploaded_files)} arquivo(s) salvo(s) com sucesso!")
+
+        st.divider()
+
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("🧠 Indexar Novos PDFs da Pasta", width="stretch"):
+                arquivos = list(PASTA_BASE_MANUAIS.glob("**/*.pdf"))
+                if not arquivos:
+                    st.warning(f"Nenhum arquivo PDF encontrado em {PASTA_BASE_MANUAIS}.")
+                else:
+                    barra = st.progress(0, text="Iniciando indexação...")
+                    total_arq = len(arquivos)
+                    for idx, arq in enumerate(arquivos):
+                        indexar_arquivo(arq)
+                        barra.progress((idx + 1) / total_arq, text=f"Indexando: {arq.name}")
+                    st.success("Aprendizado concluído com sucesso!")
+                    st.rerun()
+
+        with col_btn2:
+            if st.button("🗑️ Limpar Base de Dados Indexada", width="stretch"):
+                try:
+                    chroma_client.delete_collection(collection_name)
+                    chroma_client.get_or_create_collection(name=collection_name)
+                    st.success("Base de dados limpa com sucesso!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao limpar base: {e}")
