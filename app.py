@@ -250,7 +250,7 @@ else:
         st.info(f"**Status:** Sistema Pronto\n\n📁 {total_pdfs} PDFs encontrados\n📚 {total_trechos} trechos ativos")
 
     if aba_selecionada == "📖 Dúvidas Técnicas":
-        st.markdown(f"### 📖 Dúvidas Técnicas - {st.session_state.sistema_ativo.capitalize()}")
+         st.markdown(f"### 📖 Dúvidas Técnicas - {st.session_state.sistema_ativo.capitalize()}")
         
         chat_idx = st.session_state[chave_chat_atual_duvidas]
         chat_atual = st.session_state[chave_chats_duvidas][chat_idx]
@@ -287,6 +287,11 @@ else:
                             "Você é o Mir, um assistente especialista sênior em engenharia e manutenção ferroviária. "
                             "Sua função principal é atuar como um consultor técnico de suporte, respondendo a dúvidas, "
                             "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados na base de dados.\n\n"
+                            "DIRETRIZES DE ATUAÇÃO:\n"
+                            "1. Fidelidade ao Contexto: Utilize os trechos dos manuais fornecidos abaixo como sua fonte primária de verdade técnica.\n"
+                            "2. Clareza e Estrutura: Explique os conceitos de forma didática, organizada em tópicos (bullet points) ou passos.\n"
+                            "3. Transparência em Caso de Omissão: Se a resposta exata não constar, informe educadamente e dê uma orientação geral ressalvando que não consta no manual.\n"
+                            "4. Citação de Fontes: Sempre cite o nome do documento (PDF) correspondente ao lado da informação.\n\n"
                             f"CONTEXTO TÉCNICO EXTRAÍDO DOS MANUAIS:\n{contexto}"
                         )
 
@@ -354,6 +359,17 @@ else:
 
                         system_prompt = (
                             "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
+                            "Sua linguagem é técnica, direta, prática e corporativa de oficina (voltada para técnicos e mecânicos).\n\n"
+                            "DIRETRIZES DE RESPOSTA:\n"
+                            "1. IDENTIFICAÇÃO DO MODELO: Preste atenção se o usuário citou o modelo do equipamento na pergunta.\n"
+                            "2. ANÁLISE DE DADOS: Se o usuário descreveu parâmetros, analise detalhadamente.\n"
+                            "3. HIPÓTESES PRIORIZADAS: Liste as prováveis causas em ordem decrescente de probabilidade.\n"
+                            "4. AÇÃO PRÁTICA: O que o técnico deve fazer AGORA?\n\n"
+                            "ESTRUTURA OBRIGATÓRIA DA RESPOSTA:\n"
+                            "### 🔎 Interpretação do Evento\n"
+                            "### 📊 Análise das Variáveis\n"
+                            "### 💡 Minha Hipótese de Diagnóstico\n"
+                            "### 🛠️ Plano de Ação (Checklist de Oficina)\n\n"
                             f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
                             f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                         )
