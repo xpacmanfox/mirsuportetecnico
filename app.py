@@ -79,14 +79,14 @@ if st.session_state.sistema_ativo is None:
         st.markdown("---")
         st.subheader("🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("🚂 Acessar Locomotivas", key="btn_loc"):
+        if st.button("🚂 Acessar Locomotivas", key="btn_loc", width="stretch"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
         st.markdown("---")
         st.subheader("🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via"):
+        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via", width="stretch"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
@@ -97,7 +97,7 @@ if st.session_state.sistema_ativo is None:
         st.link_button(
             "🔗 Ir para Catálogos e Materiais", 
             "https://mirmaterial.streamlit.app/", 
-            use_container_width=True
+            width="stretch"
         )
 
 # --- MÓDULOS DE SUPORTE TÉCNICO ---
