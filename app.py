@@ -134,11 +134,15 @@ elif st.session_state.sistema_ativo == "catalogo_pecas":
                         contexto_partes = []
                         for pdf_path in arquivos_pdf:
                             nome_modelo_maquina = pdf_path.stem.replace("_", " ").replace("-", " ")
-                            reader = pypdf.PdfReader(str(pdf_path))
-                            for i, page in enumerate(reader.pages):
-                                texto = page.extract_text()
-                                if texto and termo_busca.lower() in texto.lower():
-                                    contexto_partes.append(f"--- Modelo/Máquina (Arquivo): {nome_modelo_maquina} | Página: {i+1} ---\n{texto[:1200]}")
+                            try:
+                                reader = pypdf.PdfReader(str(pdf_path))
+                                for i, page in enumerate(reader.pages):
+                                    texto = page.extract_text()
+                                    if texto and termo_busca.lower() in texto.lower():
+                                        contexto_partes.append(f"--- Modelo/Máquina (Arquivo): {nome_modelo_maquina} | Página: {i+1} ---\n{texto[:1200]}")
+                            except Exception as e:
+                                st.warning(f"Não foi possível ler o arquivo '{pdf_path.name}': {e}")
+                                continue
                         
                         if not contexto_partes:
                             st.info("Nenhum trecho direto correspondente foi encontrado nos arquivos. Tente um termo mais genérico.")
