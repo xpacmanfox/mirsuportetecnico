@@ -17,7 +17,7 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES EM VERMELHO E UNIFORMES) ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES DE IGUAL TAMANHO E VERMELHOS) ---
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] * {
@@ -29,7 +29,10 @@ st.markdown("""
         .stChatInput textarea {
             font-size: 16px !important;
         }
-        /* Padronização de TODOS os botões para vermelho com largura uniforme */
+        /* Força largura total idêntica para st.button e st.link_button */
+        div.stButton, div.stLinkButton {
+            width: 100% !important;
+        }
         .stButton button, div.stLinkButton a {
             width: 100% !important;
             background-color: #ff4b4b !important;
