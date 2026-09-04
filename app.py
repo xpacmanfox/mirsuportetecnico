@@ -351,3 +351,5 @@ else:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro ao limpar base: {e}")
+
+# Atualizado em 2026
