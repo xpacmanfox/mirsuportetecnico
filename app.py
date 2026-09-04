@@ -287,7 +287,7 @@ else:
                             "### 💡 Minha Hipótese de Diagnóstico\n"
                             "### 🛠️ Plano de Ação (Checklist de Oficina)\n\n"
                             f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
-                            f"Fontes/Documentos disponíveis para referência: {fontes_str}"
+                            f"Fontes/Documentos disponíveis para referência: {fontes_str}\n\n"
                         )
 
                         messages_payload = [{"role": "system", "content": system_prompt}]
