@@ -69,14 +69,14 @@ if st.session_state.sistema_ativo is None:
         st.markdown("---")
         st.subheader("🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("🚂 Acessar Locomotivas", key="btn_loc"):
+        if st.button("🚂 Acessar Locomotivas", key="btn_loc", width="stretch"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
         st.markdown("---")
         st.subheader("🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via"):
+        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via", width="stretch"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
@@ -86,7 +86,8 @@ if st.session_state.sistema_ativo is None:
         st.markdown("Acesse o sistema externo de consulta de catálogos em PDF (Locomotivas e Máquinas) e códigos internos.")
         st.link_button(
             "🔗 Ir para Catálogos e Materiais", 
-            "https://mirmaterial.streamlit.app/"
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
         )
 
 # --- MÓDULOS DE SUPORTE TÉCNICO ---
@@ -151,14 +152,15 @@ else:
         st.session_state[chave_chat_atual_falhas] = 0
 
     with st.sidebar:
-        if st.button("🏠 Voltar ao Menu Principal"):
+        if st.button("🏠 Voltar ao Menu Principal", width="stretch"):
             st.session_state.sistema_ativo = None
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.link_button(
             "📦 Catálogos e Códigos", 
-            "https://mirmaterial.streamlit.app/"
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
         )
 
         st.divider()
@@ -176,7 +178,7 @@ else:
         
         if aba_selecionada == "📖 Dúvidas Técnicas":
             st.markdown("### 🕒 Histórico de Dúvidas")
-            if st.button("➕ Novo Chat de Dúvidas"):
+            if st.button("➕ Novo Chat de Dúvidas", width="stretch"):
                 lista_chats = st.session_state[chave_chats_duvidas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -189,10 +191,10 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_duvidas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}"):
+                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}", width="stretch"):
                     st.session_state[chave_chat_atual_duvidas] = i
                     st.rerun()
-                if col_h2.button("🗑️", key=f"del_duvida_{i}"):
+                if col_h2.button("🗑️", key=f"del_duvida_{i}", width="stretch"):
                     lista_chats = st.session_state[chave_chats_duvidas]
                     if len(lista_chats) > 1:
                         del lista_chats[i]
@@ -203,7 +205,7 @@ else:
 
         elif aba_selecionada == "⚙️ Análise de Falhas":
             st.markdown("### 🕒 Histórico de Falhas")
-            if st.button("➕ Novo Chat de Falhas"):
+            if st.button("➕ Novo Chat de Falhas", width="stretch"):
                 lista_chats = st.session_state[chave_chats_falhas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -216,10 +218,10 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_falhas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}"):
+                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}", width="stretch"):
                     st.session_state[chave_chat_atual_falhas] = i
                     st.rerun()
-                if col_h2.button("🗑️", key=f"del_falha_{i}"):
+                if col_h2.button("🗑️", key=f"del_falha_{i}", width="stretch"):
                     lista_chats = st.session_state[chave_chats_falhas]
                     if len(lista_chats) > 1:
                         del lista_chats[i]
@@ -237,27 +239,22 @@ else:
             
         st.info(f"**Status:** Sistema Pronto\n\n📁 {total_pdfs} PDFs encontrados\n📚 {total_trechos} trechos ativos")
 
-    if aba_selecionada in ["📖 Dúvidas Técnicas", "⚙️ Análise de Falhas"]:
-        is_falhas = (aba_selecionada == "⚙️ Análise de Falhas")
-        titulo_secao = "Análise de Falhas" if is_falhas else "Dúvidas Técnicas"
-        chave_chats = chave_chats_falhas if is_falhas else chave_chats_duvidas
-        chave_chat_atual = chave_chat_atual_falhas if is_falhas else chave_chat_atual_duvidas
+    if aba_selecionada == "📖 Dúvidas Técnicas":
+        st.markdown(f"### 📖 Dúvidas Técnicas - {st.session_state.sistema_ativo.capitalize()}")
         
-        st.markdown(f"### 📖 {titulo_secao} - {st.session_state.sistema_ativo.capitalize()}")
-        
-        chat_idx = st.session_state[chave_chat_atual]
-        chat_atual = st.session_state[chave_chats][chat_idx]
+        chat_idx = st.session_state[chave_chat_atual_duvidas]
+        chat_atual = st.session_state[chave_chats_duvidas][chat_idx]
 
         for msg in chat_atual["mensagens"]:
             with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
                 st.markdown(msg["content"])
 
-        pergunta = st.chat_input("Digite sua dúvida ou descrição da falha...", key=f"input_{aba_selecionada}")
+        pergunta = st.chat_input("Qual dúvida técnica você tem hoje?", key="input_duvida")
 
         if pergunta:
             chat_atual["mensagens"].append({"role": "user", "content": pergunta})
             
-            if chat_atual["titulo"].startswith("Nova ") or chat_atual["titulo"].startswith("Dúvida") or chat_atual["titulo"].startswith("Falha"):
+            if chat_atual["titulo"].startswith("Nova Dúvida") or chat_atual["titulo"].startswith("Dúvida"):
                 chat_atual["titulo"] = pergunta[:25] + "..." if len(pergunta) > 25 else pergunta
 
             with st.chat_message("user", avatar="👤"):
@@ -270,16 +267,11 @@ else:
                         resultados = collection.query(query_embeddings=pergunta_vetor, n_results=12)
                         
                         contexto_partes = []
-                        fontes_encontradas = set()
-                        
                         if resultados and resultados["documents"] and resultados["documents"][0]:
                             for doc, meta in zip(resultados["documents"][0], resultados["metadatas"][0]):
-                                nome_fonte = meta.get('source', 'Desconhecido')
-                                contexto_partes.append(f"Fonte: {nome_fonte} | Conteúdo: {doc}")
-                                fontes_encontradas.add(nome_fonte)
+                                contexto_partes.append(f"Fonte: {meta.get('source', 'Desconhecido')} | Conteúdo: {doc}")
                         
                         contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado."
-                        fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhuma fonte direta."
                         
                         system_prompt = (
                             "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
@@ -337,7 +329,7 @@ else:
 
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            if st.button("🧠 Indexar Novos PDFs da Pasta"):
+            if st.button("🧠 Indexar Novos PDFs da Pasta", width="stretch"):
                 arquivos = list(PASTA_BASE_MANUAIS.glob("**/*.pdf"))
                 if not arquivos:
                     st.warning(f"Nenhum arquivo PDF encontrado em {PASTA_BASE_MANUAIS}.")
@@ -351,7 +343,7 @@ else:
                     st.rerun()
 
         with col_btn2:
-            if st.button("🗑️ Limpar Base de Dados Indexada"):
+            if st.button("🗑️ Limpar Base de Dados Indexada", width="stretch"):
                 try:
                     chroma_client.delete_collection(collection_name)
                     chroma_client.get_or_create_collection(name=collection_name)
@@ -359,5 +351,3 @@ else:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro ao limpar base: {e}")
-
-# Atualizado em 2026
