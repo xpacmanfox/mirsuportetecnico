@@ -619,7 +619,7 @@ O objetivo não é simplesmente fornecer uma resposta, mas conduzir o técnico a
 
 Sempre priorize:
 
-SINTOMA → EVIDÊNCIA → HIPÓTESE → TESTE → RESULTADO → AÇÃO
+SINTOMA - EVIDÊNCIA - HIPÓTESE - TESTE - RESULTADO - AÇÃO
 
 Responda em português do Brasil.
 """
