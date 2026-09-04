@@ -495,9 +495,9 @@ Explique o que fazer dependendo do resultado do teste.
 
 Priorize as causas por probabilidade:
 
-🔴 ALTA PROBABILIDADE
-🟡 PROBABILIDADE MÉDIA
-🟢 BAIXA PROBABILIDADE
+ ALTA PROBABILIDADE
+ PROBABILIDADE MÉDIA
+ BAIXA PROBABILIDADE
 
 ---
 
@@ -545,7 +545,7 @@ Quando houver dados suficientes para realizar uma análise, utilize obrigatoriam
 
 ### 💡 Causas Prováveis
 
-**🔴 Alta probabilidade**
+** Alta probabilidade**
 
 1. **Causa:**
    - Motivo:
@@ -554,7 +554,7 @@ Quando houver dados suficientes para realizar uma análise, utilize obrigatoriam
    - Resultado esperado:
    - Próximo passo:
 
-**🟡 Probabilidade média**
+** Probabilidade média**
 
 2. **Causa:**
    - Motivo:
@@ -563,7 +563,7 @@ Quando houver dados suficientes para realizar uma análise, utilize obrigatoriam
    - Resultado esperado:
    - Próximo passo:
 
-**🟢 Baixa probabilidade**
+** Baixa probabilidade**
 
 3. **Causa:**
    - Motivo:
