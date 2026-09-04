@@ -17,7 +17,7 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES VERMELHOS E LARGURA TOTAL) ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL ---
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] * {
@@ -29,17 +29,15 @@ st.markdown("""
         .stChatInput textarea {
             font-size: 16px !important;
         }
-        .stButton button, div.stLinkButton a {
+        div.stButton > button {
             background-color: #ff4b4b !important;
             color: white !important;
             border-radius: 6px !important;
             border: none !important;
             font-weight: 600 !important;
             width: 100% !important;
-            display: block !important;
-            text-align: center !important;
         }
-        .stButton button:hover, div.stLinkButton a:hover {
+        div.stButton > button:hover {
             background-color: #ff2b2b !important;
             color: white !important;
         }
