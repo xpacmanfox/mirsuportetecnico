@@ -272,7 +272,8 @@ else:
                                 contexto_partes.append(f"Fonte: {meta.get('source', 'Desconhecido')} | Conteúdo: {doc}")
                         
                         contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado."
-                        
+                        fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
+
                         system_prompt = (
                             "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
                             "Sua linguagem é técnica, direta, prática e corporativa de oficina (voltada para técnicos e mecânicos).\n\n"
@@ -287,7 +288,7 @@ else:
                             "### 💡 Minha Hipótese de Diagnóstico\n"
                             "### 🛠️ Plano de Ação (Checklist de Oficina)\n\n"
                             f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
-                            f"Fontes/Documentos disponíveis para referência: {fontes_str}\n\n"
+                            f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                         )
 
                         messages_payload = [{"role": "system", "content": system_prompt}]
