@@ -83,9 +83,9 @@ if st.session_state.sistema_ativo is None:
             
     with col2:
         st.markdown("---")
-        st.subheader("🔧 Especificação de Mangueiras")
-        st.markdown("Painel interativo para montagem, dimensionamento e geração de especificação técnica de mangueiras.")
-        if st.button("🔧 Acessar Mangueiras", key="btn_mangueiras"):
+        st.subheader("🔧 Especificação de Mangueiras & Adaptadores")
+        st.markdown("Painel interativo para mangueiras (2781, 1503, FC350-) e adaptadores com tabelas JIC e NPT.")
+        if st.button("🔧 Acessar Mangueiras e Adaptadores", key="btn_mangueiras"):
             st.session_state.sistema_ativo = "mangueiras"
             st.rerun()
 
@@ -99,7 +99,6 @@ if st.session_state.sistema_ativo is None:
 
 # --- MÓDULOS DE SUPORTE TÉCNICO ---
 else:
-    # Se o sistema ativo for mangueiras, renderizamos o painel interativo dedicado
     if st.session_state.sistema_ativo == "mangueiras":
         with st.sidebar:
             if st.button("🏠 Voltar ao Menu Principal"):
@@ -108,55 +107,176 @@ else:
             st.markdown("<br>", unsafe_allow_html=True)
             st.link_button("📦 Catálogos e Códigos", "https://mirmaterial.streamlit.app/")
             st.divider()
-            st.markdown("## 🔧 MIR - Mangueiras")
-            st.caption("Montagem e Especificação Técnica")
+            st.markdown("## 🔧 MIR - Hidráulica")
+            st.caption("Mangueiras & Adaptadores JIC/NPT")
 
-        st.title("🔧 Painel Interativo de Especificação de Mangueiras")
-        st.markdown("Preencha os parâmetros abaixo para montar e validar a especificação técnica da mangueira ferroviária:")
+        st.title("🔧 Painel de Especificação de Mangueiras e Adaptadores")
+        
+        # Abas internas para separar Mangueiras e Adaptadores
+        aba_mangueira, aba_adaptador = st.tabs([" hoses Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
 
-        with st.form("form_montagem_mangueira"):
-            col_m1, col_m2 = st.columns(2)
+        # TAB 1: MANGUEIRAS
+        with aba_mangueira:
+            st.markdown("### Especificação de Mangueiras (Modelos 2781, 1503, FC350-)")
             
-            with col_m1:
-                aplicacao = st.selectbox(
-                    "Aplicação / Sistema",
-                    ["Freio Ar (Geral)", "Sistema CCBII", "Hidráulica de Alta Pressão", "Combustível / Óleo", "Água / Refrigeração"]
-                )
-                diametro = st.selectbox(
-                    "Diâmetro Nominal (DN / Polegadas)",
-                    ["1/4\"", "3/8\"", "1/2\"", "3/4\"", "1\"", "1.1/4\"", "1.1/2\"", "2\""]
-                )
-                pressao_trabalho = st.number_input("Pressão Máxima de Trabalho (PSI)", min_value=0, max_value=10000, value=300)
+            tabelas_modelos = {
+                "2781-": {
+                    "descricao": "Modelo 2781 (Alta Pressão / Robusto)",
+                    "dados": [
+                        {"tamanho": "4", "ext": 17.5, "int": 6.4, "pressao": "400bar"},
+                        {"tamanho": "6", "ext": 21.4, "int": 9.5, "pressao": "350bar"},
+                        {"tamanho": "8", "ext": 24.6, "int": 12.7, "pressao": "300bar"},
+                        {"tamanho": "10", "ext": 27.8, "int": 15.9, "pressao": "250bar"},
+                        {"tamanho": "12", "ext": 31.8, "int": 19.0, "pressao": "225bar"},
+                        {"tamanho": "16", "ext": 39.7, "int": 25.4, "pressao": "175bar"},
+                        {"tamanho": "20", "ext": 50.8, "int": 31.8, "pressao": "165bar"},
+                        {"tamanho": "24", "ext": 57.2, "int": 38.1, "pressao": "135bar"}
+                    ]
+                },
+                "1503-": {
+                    "descricao": "Modelo 1503 (Pressão Média/Intermediária)",
+                    "dados": [
+                        {"tamanho": "6", "ext": 17.0, "int": 8.0, "pressao": "160bar"},
+                        {"tamanho": "8", "ext": 19.5, "int": 10.3, "pressao": "140bar"},
+                        {"tamanho": "10", "ext": 23.5, "int": 12.7, "pressao": "125bar"},
+                        {"tamanho": "12", "ext": 27.4, "int": 15.9, "pressao": "105bar"},
+                        {"tamanho": "16", "ext": 31.3, "int": 22.2, "pressao": "55bar"},
+                        {"tamanho": "20", "ext": 38.0, "int": 28.6, "pressao": "40bar"},
+                        {"tamanho": "24", "ext": 44.5, "int": 35.0, "pressao": "35bar"}
+                    ]
+                },
+                "FC350-": {
+                    "descricao": "Modelo FC350- (Baixa/Média Pressão)",
+                    "dados": [
+                        {"tamanho": "4", "ext": 13.1, "int": 4.8, "pressao": "105bar"},
+                        {"tamanho": "5", "ext": 14.7, "int": 6.4, "pressao": "105bar"},
+                        {"tamanho": "6", "ext": 17.0, "int": 7.9, "pressao": "105bar"},
+                        {"tamanho": "8", "ext": 19.5, "int": 10.3, "pressao": "85bar"},
+                        {"tamanho": "10", "ext": 23.4, "int": 12.7, "pressao": "85bar"},
+                        {"tamanho": "12", "ext": 27.4, "int": 15.9, "pressao": "50bar"}
+                    ]
+                }
+            }
 
-            with col_m2:
-                tipo_terminal_1 = st.selectbox("Terminal Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "FlANGE Code 61", "Flange Code 62", "Olhal Hidráulico"])
-                tipo_terminal_2 = st.selectbox("Terminal Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
+            with st.form("form_montagem_mangueira"):
+                modelo_escolhido = st.selectbox("Selecione o Modelo da Mangueira", list(tabelas_modelos.keys()), format_func=lambda x: tabelas_modelos[x]["descricao"])
+                tamanhos_disponiveis = [item["tamanho"] for item in tabelas_modelos[modelo_escolhido]["dados"]]
+                tamanho_escolhido = st.selectbox("Tamanho Nominal (Código)", tamanhos_disponiveis)
+
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    tipo_terminal_1 = st.selectbox("Terminal Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
+                with col_m2:
+                    tipo_terminal_2 = st.selectbox("Terminal Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
+
                 comprimento_mm = st.number_input("Comprimento Total (mm)", min_value=100, max_value=20000, value=1000, step=50)
+                observacoes_extras = st.text_area("Observações Específicas (opcional)", placeholder="Ex: Capa protetora contra abrasão...")
 
-            observacoes_extras = st.text_area("Observações Específicas ou Requisitos de Norma (opcional)", placeholder="Ex: Capa protetora contra abrasão, mola de aço inox...")
+                submitted_mangueira = st.form_submit_button("Gerar Especificação Técnica da Mangueira")
 
-            submitted = st.form_submit_button("Gerar Especificação Técnica da Mangueira")
+            if submitted_mangueira:
+                dados_item = next(item for item in tabelas_modelos[modelo_escolhido]["dados"] if item["tamanho"] == tamanho_escolhido)
+                st.success("Especificação de mangueira gerada com sucesso!")
+                st.info(f"""
+                * **Modelo:** {modelo_escolhido} ({tabelas_modelos[modelo_escolhido]['descricao']})
+                * **Tamanho Código:** {tamanho_escolhido}
+                * **Diâmetro Externo:** {dados_item['ext']} mm
+                * **Diâmetro Interno:** {dados_item['int']} mm
+                * **Pressão Operacional:** {dados_item['pressao']}
+                * **Terminais:** {tipo_terminal_1} / {tipo_terminal_2}
+                * **Comprimento:** {comprimento_mm} mm
+                """)
+                codigo_gerado = f"{modelo_escolhido}{tamanho_escolhido}-{comprimento_mm}MM"
+                st.markdown(f"**Código Sugerido:** `{codigo_gerado}`")
 
-        if submitted:
-            st.success("Especificação gerada com sucesso!")
-            st.markdown("### 📋 Resultado da Montagem")
+        # TAB 2: ADAPTADORES (JIC / NPT)
+        with aba_adaptador:
+            st.markdown("### Configuração de Adaptadores e Conexões (Padrões JIC e NPT)")
             
-            # Exibição estruturada do item montado
-            st.info(f"""
-            * **Aplicação:** {aplicacao}
-            * **Diâmetro Nominal:** {diametro}
-            * **Pressão de Trabalho:** {pressao_trabalho} PSI
-            * **Terminal A:** {tipo_terminal_1}
-            * **Terminal B:** {tipo_terminal_2}
-            * **Comprimento:** {comprimento_mm} mm
-            * **Requisitos Extras:** {observacoes_extras if observacoes_extras else 'Nenhum informado'}
-            """)
-            
-            codigo_gerado = f"MANG-{aplicacao[:3].upper()}-{diametro.replace('/','').replace('\"','')}-{comprimento_mm}MM"
-            st.markdown(f"**Código de Referência Sugerido:** `{codigo_gerado}`")
+            # Tabelas baseadas na imagem fornecida
+            tabela_jic = [
+                {"ng": "4", "ext_d": 11.07, "rosca": "JIC 7/16-20"},
+                {"ng": "6", "ext_d": 14.25, "rosca": "JIC 9/16-18"},
+                {"ng": "8", "ext_d": 19.00, "rosca": "JIC 3/4-16"},
+                {"ng": "10", "ext_d": 22.17, "rosca": "JIC 7/8-14"},
+                {"ng": "12", "ext_d": 26.95, "rosca": "JIC 1 1/16-12"},
+                {"ng": "16", "ext_d": 33.30, "rosca": "JIC 1 5/16-12"},
+                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"}, # Ajustado conforme proporção visual da tabela
+                {"ng": "24", "ext_d": 47.57, "rosca": "JIC 1 7/8-12"},
+                {"ng": "32", "ext_d": 63.45, "rosca": "JIC 2 1/2-12"}
+            ]
+
+            tabela_npt = [
+                {"ng": "2", "ext_d": "N/A", "rosca": "NPT 1/8\"-27"},
+                {"ng": "4", "ext_d": 13.50, "rosca": "NPT 1/4\"-18"},
+                {"ng": "6", "ext_d": 16.50, "rosca": "NPT 3/8\"-18"},
+                {"ng": "8", "ext_d": 21.00, "rosca": "NPT 1/2\"-14"},
+                {"ng": "12", "ext_d": 26.00, "rosca": "NPT 3/4\"-14"},
+                {"ng": "16", "ext_d": 33.00, "rosca": "NPT 1\"-11 1/2"},
+                {"ng": "20", "ext_d": 41.00, "rosca": "NPT 1 1/4\"-11 1/2"},
+                {"ng": "24", "ext_d": 47.00, "rosca": "NPT 1 1/2\"-11 1/2"},
+                {"ng": "32", "ext_d": 59.00, "rosca": "NPT 2\"-11 1/2"}
+            ]
+
+            modelos_adaptadores = [
+                "2021- (Adaptador Macho Giratório 90°)",
+                "2041- (Adaptador Reto Macho-Macho)",
+                "2042- (Adaptador Macho 45°)",
+                "2043- (Adaptador Macho 90°)",
+                "2023- (Adaptador Fêmea Giratória 90°)",
+                "2024- (Adaptador Fêmea Giratória 45°)",
+                "2081- (Adaptador Tê / Redução)",
+                "2088- (Adaptador Cruz / Tê Especial)",
+                "2030- (Tampão Cego / Plugue)",
+                "2092- (União Anteparo / Conexão Reta)"
+            ]
+
+            with st.form("form_montagem_adaptador"):
+                modelo_adaptador = st.selectbox("Selecione o Modelo do Adaptador", modelos_adaptadores)
+                
+                col_ad1, col_ad2 = st.columns(2)
+                
+                with col_ad1:
+                    st.markdown("#### Rosca Extremidade 1")
+                    tipo_rosca_1 = st.selectbox("Padrão Lado 1", ["JIC", "NPT"], key="t_rosca_1")
+                    if tipo_rosca_1 == "JIC":
+                        opcoes_jic_1 = [f"NG {item['ng']} - {item['rosca']} (Ext: {item['ext_d']}mm)" for item in tabela_jic]
+                        escolha_l1 = st.selectbox("Medida Lado 1 (JIC)", opcoes_jic_1, key="es_jic_1")
+                    else:
+                        opcoes_npt_1 = [f"NG {item['ng']} - {item['rosca']} (Ext: {item['ext_d']}mm)" for item in tabela_npt]
+                        escolha_l1 = st.selectbox("Medida Lado 1 (NPT)", opcoes_npt_1, key="es_npt_1")
+
+                with col_ad2:
+                    st.markdown("#### Rosca Extremidade 2")
+                    tipo_rosca_2 = st.selectbox("Padrão Lado 2", ["JIC", "NPT"], key="t_rosca_2")
+                    if tipo_rosca_2 == "JIC":
+                        opcoes_jic_2 = [f"NG {item['ng']} - {item['rosca']} (Ext: {item['ext_d']}mm)" for item in tabela_jic]
+                        escolha_l2 = st.selectbox("Medida Lado 2 (JIC)", opcoes_jic_2, key="es_jic_2")
+                    else:
+                        opcoes_npt_2 = [f"NG {item['ng']} - {item['rosca']} (Ext: {item['ext_d']}mm)" for item in tabela_npt]
+                        escolha_l2 = st.selectbox("Medida Lado 2 (NPT)", opcoes_npt_2, key="es_npt_2")
+
+                qtd_pecas = st.number_input("Quantidade", min_value=1, max_value=100, value=1)
+                obs_adaptador = st.text_area("Observações do Adaptador (opcional)", placeholder="Ex: Material aço carbono zincado...")
+
+                submitted_adaptador = st.form_submit_button("Gerar Código do Adaptador")
+
+            if submitted_adaptador:
+                prefixo_codigo = modelo_adaptador.split(" ")[0]
+                st.success("Adaptador especificado com sucesso!")
+                st.info(f"""
+                * **Modelo do Adaptador:** {modelo_adaptador}
+                * **Lado 1:** {escolha_l1}
+                * **Lado 2:** {escolha_l2}
+                * **Quantidade:** {qtd_pecas} unidade(s)
+                * **Observações:** {obs_adaptador if obs_adaptador else 'Nenhuma'}
+                """)
+                
+                codigo_adaptador_final = f"{prefixo_codigo} [L1: {escolha_l1}] x [L2: {escolha_l2}]"
+                st.markdown(f"**Código de Referência do Adaptador:** `{codigo_adaptador_final}`")
 
     else:
-        # Lógica padrão para Locomotivas e Máquinas de Via (que mantêm o assistente de chat)
+        # Lógica padrão de Locomotivas e Máquinas de Via
         if st.session_state.sistema_ativo == "locomotivas":
             PASTA_BASE_MANUAIS = Path("./Docs_Locomotivas")
             collection_name = "mir_suporte_locomotivas"
