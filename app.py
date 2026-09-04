@@ -41,14 +41,6 @@ st.markdown("""
             background-color: #ff2b2b !important;
             color: white !important;
         }
-        .card-adaptador {
-            background-color: #1e2530;
-            border: 2px solid #ff4b4b;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -120,12 +112,13 @@ else:
 
         st.title("🔧 Painel de Especificação de Mangueiras e Adaptadores")
         
-        aba_mangueira, aba_adaptador = st.tabs(["🧵 Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
+        aba_mangueira, aba_adaptador = st.tabs(["🪡 Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
 
-        # TAB 1: MANGUEIRAS
+        # TAB 1: MANGUEIRAS COM BUSCA MANUAL POR PAQUÍMETRO
         with aba_mangueira:
             st.markdown("### Especificação de Mangueiras (Modelos 2781, 1503, FC350-)")
-            
+            st.markdown("💡 *Dica:* Insira as medidas obtidas com o paquímetro para que o sistema encontre o modelo e tamanho tabelado mais próximo automaticamente.")
+
             tabelas_modelos = {
                 "2781-": {
                     "descricao": "Modelo 2781 (Alta Pressão / Robusto)",
@@ -166,35 +159,61 @@ else:
             }
 
             with st.form("form_montagem_mangueira"):
-                modelo_escolhido = st.selectbox("Selecione o Modelo da Mangueira", list(tabelas_modelos.keys()), format_func=lambda x: tabelas_modelos[x]["descricao"])
-                tamanhos_disponiveis = [item["tamanho"] for item in tabelas_modelos[modelo_escolhido]["dados"]]
-                tamanho_escolhido = st.selectbox("Tamanho Nominal (Código)", tamanhos_disponiveis)
+                st.markdown("#### 📏 Medições com Paquímetro (Entrada Manual)")
+                col_paq1, col_paq2 = st.columns(2)
+                with col_paq1:
+                    medida_ext_input = st.number_input("Diâmetro Externo Medido (mm)", min_value=0.0, max_value=100.0, value=21.4, step=0.1)
+                with col_paq2:
+                    medida_int_input = st.number_input("Diâmetro Interno Medido (mm)", min_value=0.0, max_value=100.0, value=9.5, step=0.1)
 
+                st.divider()
+                st.markdown("#### 🛠️ Configuração de Terminais e Comprimento")
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
                     tipo_terminal_1 = st.selectbox("Terminal Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
                 with col_m2:
                     tipo_terminal_2 = st.selectbox("Terminal Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
 
-                comprimento_mm = st.number_input("Comprimento Total (mm)", min_value=100, max_value=20000, value=1000, step=50)
+                comprimento_mm = st.number_input("Comprimento Total da Mangueira (mm)", min_value=100, max_value=20000, value=1000, step=50)
                 observacoes_extras = st.text_area("Observações Específicas (opcional)", placeholder="Ex: Capa protetora contra abrasão...")
 
-                submitted_mangueira = st.form_submit_button("Gerar Especificação Técnica da Mangueira")
+                submitted_mangueira = st.form_submit_button("Buscar Correspondência e Gerar Especificação")
 
             if submitted_mangueira:
-                dados_item = next(item for item in tabelas_modelos[modelo_escolhido]["dados"] if item["tamanho"] == tamanho_escolhido)
-                st.success("Especificação de mangueira gerada com sucesso!")
-                st.info(f"""
-                * **Modelo:** {modelo_escolhido} ({tabelas_modelos[modelo_escolhido]['descricao']})
-                * **Tamanho Código:** {tamanho_escolhido}
-                * **Diâmetro Externo:** {dados_item['ext']} mm
-                * **Diâmetro Interno:** {dados_item['int']} mm
-                * **Pressão Operacional:** {dados_item['pressao']}
-                * **Terminais:** {tipo_terminal_1} / {tipo_terminal_2}
-                * **Comprimento:** {comprimento_mm} mm
-                """)
-                codigo_gerado = f"{modelo_escolhido}{tamanho_escolhido}-{comprimento_mm}MM"
-                st.markdown(f"**Código Sugerido:** `{codigo_gerado}`")
+                # Algoritmo para encontrar a melhor correspondência (menor diferença absoluta combinada ext + int)
+                melhor_match = None
+                menor_diferenca = float('inf')
+
+                for mod_key, mod_info in tabelas_modelos.items():
+                    for item in mod_info["dados"]:
+                        diff = abs(item["ext"] - medida_ext_input) + abs(item["int"] - medida_int_input)
+                        if diff < menor_diferenca:
+                            menor_diferenca = diff
+                            melhor_match = {
+                                "modelo": mod_key,
+                                "descricao": mod_info["descricao"],
+                                "tamanho": item["tamanho"],
+                                "ext_tabelado": item["ext"],
+                                "int_tabelado": item["int"],
+                                "pressao": item["pressao"]
+                            }
+
+                if melhor_match:
+                    st.success("Correspondência encontrada com base nos valores informados!")
+                    st.info(f"""
+                    * **Modelo Identificado:** {melhor_match['modelo']} ({melhor_match['descricao']})
+                    * **Tamanho Código Recomendado:** {melhor_match['tamanho']}
+                    * **Diâmetro Externo Tabelado:** {melhor_match['ext_tabelado']} mm *(Medido: {medida_ext_input} mm)*
+                    * **Diâmetro Interno Tabelado:** {melhor_match['int_tabelado']} mm *(Medido: {medida_int_input} mm)*
+                    * **Pressão Operacional:** {melhor_match['pressao']}
+                    * **Terminais:** {tipo_terminal_1} / {tipo_terminal_2}
+                    * **Comprimento:** {comprimento_mm} mm
+                    * **Observações:** {observacoes_extras if observacoes_extras else 'Nenhuma'}
+                    """)
+                    codigo_gerado = f"{melhor_match['modelo']}{melhor_match['tamanho']}-{comprimento_mm}MM"
+                    st.markdown(f"**Código de Referência Sugerido:** `{codigo_gerado}`")
+                else:
+                    st.warning("Nenhum modelo compatível encontrado com margem próxima.")
 
         # TAB 2: ADAPTADORES (JIC / NPT)
         with aba_adaptador:
@@ -224,43 +243,22 @@ else:
                 {"ng": "32", "ext_d": 59.00, "rosca": "NPT 2\"-11 1/2"}
             ]
 
-            # Dicionário com informações visuais e esquemáticas dos adaptadores da imagem
-            info_adaptadores = {
-                "2021-": {"nome": "Adaptador Macho Giratório 90°", "tipo": "Curva 90° com Giratório", "simbolo": "📐 90° Giratório"},
-                "2041-": {"nome": "Adaptador Reto Macho-Macho", "tipo": "Conexão Reta Simétrica", "simbolo": "📏 Reto Simétrico"},
-                "2042-": {"nome": "Adaptador Macho 45°", "tipo": "Curva 45°", "simbolo": "📐 45° Curva"},
-                "2043-": {"nome": "Adaptador Macho 90°", "tipo": "Curva 90° Fixa", "simbolo": "📐 90° Fixo"},
-                "2023-": {"nome": "Adaptador Fêmea Giratória 90°", "tipo": "Curva 90° Fêmea", "simbolo": "🔄 90° Fêmea Giratória"},
-                "2024-": {"nome": "Adaptador Fêmea Giratória 45°", "tipo": "Curva 45° Fêmea", "simbolo": "🔄 45° Fêmea Giratória"},
-                "2081-": {"nome": "Adaptador Tê / Redução", "tipo": "Derivação em Tê (Três Vias)", "simbolo": "🔀 Tê de Derivação"},
-                "2088-": {"nome": "Adaptador Cruz / Tê Especial", "tipo": "Cruzamento de Linhas", "simbolo": "➕ Conexão em Cruz"},
-                "2030-": {"nome": "Tampão Cego / Plugue", "tipo": "Fechamento de Linha", "simbolo": "🛑 Tampão Cego"},
-                "2092-": {"nome": "União Anteparo / Conexão Reta", "tipo": "Passagem de Anteparo", "simbolo": "🔩 União Anteparo"},
-                "2027-": {"nome": "Adaptador Redução Reta", "tipo": "Redução de Rosca", "simbolo": "📉 Redução Reta"},
-                "900599-": {"nome": "Adaptador Especial / Conexão", "tipo": "Conector Especial", "simbolo": "⚙️ Conector Especial"}
-            }
-
-            # Seleção fora ou dentro do formulário para exibição imediata da pré-visualização visual
-            col_sel_mod, col_prev_mod = st.columns([1, 1])
-            
-            with col_sel_mod:
-                modelo_selecionado_chave = st.selectbox(
-                    "Selecione o Modelo do Adaptador", 
-                    list(info_adaptadores.keys()), 
-                    format_func=lambda x: f"{x} - {info_adaptadores[x]['nome']}"
-                )
-
-            with col_prev_mod:
-                detalhe = info_adaptadores[modelo_selecionado_chave]
-                st.markdown(f"""
-                <div style="background-color: #1e2530; border: 2px solid #ff4b4b; padding: 12px; border-radius: 8px; text-align: center;">
-                    <h4 style="color: #ff4b4b; margin: 0;">Esquema: Modelo {modelo_selecionado_chave}</h4>
-                    <p style="font-size: 18px; margin: 5px 0;"><b>{detalhe['simbolo']}</b></p>
-                    <p style="font-size: 14px; color: #a0a0a0; margin: 0;">Categoria: {detalhe['tipo']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+            modelos_adaptadores = [
+                "2021- (Adaptador Macho Giratório 90°)",
+                "2041- (Adaptador Reto Macho-Macho)",
+                "2042- (Adaptador Macho 45°)",
+                "2043- (Adaptador Macho 90°)",
+                "2023- (Adaptador Fêmea Giratória 90°)",
+                "2024- (Adaptador Fêmea Giratória 45°)",
+                "2081- (Adaptador Tê / Redução)",
+                "2088- (Adaptador Cruz / Tê Especial)",
+                "2030- (Tampão Cego / Plugue)",
+                "2092- (União Anteparo / Conexão Reta)"
+            ]
 
             with st.form("form_montagem_adaptador"):
+                modelo_adaptador = st.selectbox("Selecione o Modelo do Adaptador", modelos_adaptadores)
+                
                 col_ad1, col_ad2 = st.columns(2)
                 
                 with col_ad1:
@@ -289,10 +287,10 @@ else:
                 submitted_adaptador = st.form_submit_button("Gerar Código do Adaptador")
 
             if submitted_adaptador:
-                prefixo_codigo = modelo_selecionado_chave
+                prefixo_codigo = modelo_adaptador.split(" ")[0]
                 st.success("Adaptador especificado com sucesso!")
                 st.info(f"""
-                * **Modelo do Adaptador:** {modelo_selecionado_chave} - {info_adaptadores[modelo_selecionado_chave]['nome']}
+                * **Modelo do Adaptador:** {modelo_adaptador}
                 * **Lado 1:** {escolha_l1}
                 * **Lado 2:** {escolha_l2}
                 * **Quantidade:** {qtd_pecas} unidade(s)
@@ -551,9 +549,9 @@ else:
                             fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
 
                             system_prompt = (
-                                "You are Mir, a senior railway maintenance engineering specialist.\n"
-                                f"Technical context extracted from local manuals:\n{contexto}\n\n"
-                                f"Available reference sources: {fontes_str}"
+                                "You are Mir, um engenheiro especialista sênior em manutenção ferroviária.\n"
+                                f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
+                                f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                             )
 
                             messages_payload = [{"role": "system", "content": system_prompt}]
