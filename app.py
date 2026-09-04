@@ -112,13 +112,13 @@ else:
 
         st.title("🔧 Painel de Especificação de Mangueiras e Adaptadores")
         
-        aba_mangueira, aba_adaptador = st.tabs(["🪡 Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
+        # Abas internas para separar Mangueiras e Adaptadores
+        aba_mangueira, aba_adaptador = st.tabs([" hoses Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
 
-        # TAB 1: MANGUEIRAS COM BUSCA MANUAL POR PAQUÍMETRO
+        # TAB 1: MANGUEIRAS
         with aba_mangueira:
             st.markdown("### Especificação de Mangueiras (Modelos 2781, 1503, FC350-)")
-            st.markdown("💡 *Dica:* Insira as medidas obtidas com o paquímetro para que o sistema encontre o modelo e tamanho tabelado mais próximo automaticamente.")
-
+            
             tabelas_modelos = {
                 "2781-": {
                     "descricao": "Modelo 2781 (Alta Pressão / Robusto)",
@@ -159,66 +159,41 @@ else:
             }
 
             with st.form("form_montagem_mangueira"):
-                st.markdown("#### 📏 Medições com Paquímetro (Entrada Manual)")
-                col_paq1, col_paq2 = st.columns(2)
-                with col_paq1:
-                    medida_ext_input = st.number_input("Diâmetro Externo Medido (mm)", min_value=0.0, max_value=100.0, value=21.4, step=0.1)
-                with col_paq2:
-                    medida_int_input = st.number_input("Diâmetro Interno Medido (mm)", min_value=0.0, max_value=100.0, value=9.5, step=0.1)
+                modelo_escolhido = st.selectbox("Selecione o Modelo da Mangueira", list(tabelas_modelos.keys()), format_func=lambda x: tabelas_modelos[x]["descricao"])
+                tamanhos_disponiveis = [item["tamanho"] for item in tabelas_modelos[modelo_escolhido]["dados"]]
+                tamanho_escolhido = st.selectbox("Tamanho Nominal (Código)", tamanhos_disponiveis)
 
-                st.divider()
-                st.markdown("#### 🛠️ Configuração de Terminais e Comprimento")
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
                     tipo_terminal_1 = st.selectbox("Terminal Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
                 with col_m2:
                     tipo_terminal_2 = st.selectbox("Terminal Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
 
-                comprimento_mm = st.number_input("Comprimento Total da Mangueira (mm)", min_value=100, max_value=20000, value=1000, step=50)
+                comprimento_mm = st.number_input("Comprimento Total (mm)", min_value=100, max_value=20000, value=1000, step=50)
                 observacoes_extras = st.text_area("Observações Específicas (opcional)", placeholder="Ex: Capa protetora contra abrasão...")
 
-                submitted_mangueira = st.form_submit_button("Buscar Correspondência e Gerar Especificação")
+                submitted_mangueira = st.form_submit_button("Gerar Especificação Técnica da Mangueira")
 
             if submitted_mangueira:
-                # Algoritmo para encontrar a melhor correspondência (menor diferença absoluta combinada ext + int)
-                melhor_match = None
-                menor_diferenca = float('inf')
-
-                for mod_key, mod_info in tabelas_modelos.items():
-                    for item in mod_info["dados"]:
-                        diff = abs(item["ext"] - medida_ext_input) + abs(item["int"] - medida_int_input)
-                        if diff < menor_diferenca:
-                            menor_diferenca = diff
-                            melhor_match = {
-                                "modelo": mod_key,
-                                "descricao": mod_info["descricao"],
-                                "tamanho": item["tamanho"],
-                                "ext_tabelado": item["ext"],
-                                "int_tabelado": item["int"],
-                                "pressao": item["pressao"]
-                            }
-
-                if melhor_match:
-                    st.success("Correspondência encontrada com base nos valores informados!")
-                    st.info(f"""
-                    * **Modelo Identificado:** {melhor_match['modelo']} ({melhor_match['descricao']})
-                    * **Tamanho Código Recomendado:** {melhor_match['tamanho']}
-                    * **Diâmetro Externo Tabelado:** {melhor_match['ext_tabelado']} mm *(Medido: {medida_ext_input} mm)*
-                    * **Diâmetro Interno Tabelado:** {melhor_match['int_tabelado']} mm *(Medido: {medida_int_input} mm)*
-                    * **Pressão Operacional:** {melhor_match['pressao']}
-                    * **Terminais:** {tipo_terminal_1} / {tipo_terminal_2}
-                    * **Comprimento:** {comprimento_mm} mm
-                    * **Observações:** {observacoes_extras if observacoes_extras else 'Nenhuma'}
-                    """)
-                    codigo_gerado = f"{melhor_match['modelo']}{melhor_match['tamanho']}-{comprimento_mm}MM"
-                    st.markdown(f"**Código de Referência Sugerido:** `{codigo_gerado}`")
-                else:
-                    st.warning("Nenhum modelo compatível encontrado com margem próxima.")
+                dados_item = next(item for item in tabelas_modelos[modelo_escolhido]["dados"] if item["tamanho"] == tamanho_escolhido)
+                st.success("Especificação de mangueira gerada com sucesso!")
+                st.info(f"""
+                * **Modelo:** {modelo_escolhido} ({tabelas_modelos[modelo_escolhido]['descricao']})
+                * **Tamanho Código:** {tamanho_escolhido}
+                * **Diâmetro Externo:** {dados_item['ext']} mm
+                * **Diâmetro Interno:** {dados_item['int']} mm
+                * **Pressão Operacional:** {dados_item['pressao']}
+                * **Terminais:** {tipo_terminal_1} / {tipo_terminal_2}
+                * **Comprimento:** {comprimento_mm} mm
+                """)
+                codigo_gerado = f"{modelo_escolhido}{tamanho_escolhido}-{comprimento_mm}MM"
+                st.markdown(f"**Código Sugerido:** `{codigo_gerado}`")
 
         # TAB 2: ADAPTADORES (JIC / NPT)
         with aba_adaptador:
             st.markdown("### Configuração de Adaptadores e Conexões (Padrões JIC e NPT)")
             
+            # Tabelas baseadas na imagem fornecida
             tabela_jic = [
                 {"ng": "4", "ext_d": 11.07, "rosca": "JIC 7/16-20"},
                 {"ng": "6", "ext_d": 14.25, "rosca": "JIC 9/16-18"},
@@ -226,7 +201,7 @@ else:
                 {"ng": "10", "ext_d": 22.17, "rosca": "JIC 7/8-14"},
                 {"ng": "12", "ext_d": 26.95, "rosca": "JIC 1 1/16-12"},
                 {"ng": "16", "ext_d": 33.30, "rosca": "JIC 1 5/16-12"},
-                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"},
+                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"}, # Ajustado conforme proporção visual da tabela
                 {"ng": "24", "ext_d": 47.57, "rosca": "JIC 1 7/8-12"},
                 {"ng": "32", "ext_d": 63.45, "rosca": "JIC 2 1/2-12"}
             ]
@@ -549,7 +524,7 @@ else:
                             fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
 
                             system_prompt = (
-                                "You are Mir, um engenheiro especialista sênior em manutenção ferroviária.\n"
+                                "Você é o Mir, um engenheiro especialista sênior em manutenção ferroviária.\n"
                                 f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
                                 f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                             )
