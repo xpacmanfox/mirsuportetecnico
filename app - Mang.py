@@ -112,50 +112,26 @@ else:
             st.caption("Montagem e Especificação Técnica")
 
         st.title("🔧 Painel Interativo de Especificação de Mangueiras")
-        st.markdown("Selecione o tipo exato de mangueira, os diâmetros e os terminais para gerar a especificação técnica:")
+        st.markdown("Preencha os parâmetros abaixo para montar e validar a especificação técnica da mangueira ferroviária:")
 
         with st.form("form_montagem_mangueira"):
-            
-            st.markdown("### 1. Tipo de Mangueira")
-            tipo_mangueira = st.selectbox(
-                "Selecione o modelo da mangueira (conforme catálogo/padrão):",
-                [
-                    "Mangueira Hidráulica de Alta Pressão (Trama de Aço)", 
-                    "Mangueira para Sistema de Freio / Ar (Borracha Reforçada)", 
-                    "Mangueira de Sucção / Retorno de Óleo"
-                ]
-            )
-
-            st.markdown("---")
             col_m1, col_m2 = st.columns(2)
             
             with col_m1:
-                st.markdown("#### Parâmetros Gerais")
                 aplicacao = st.selectbox(
                     "Aplicação / Sistema",
                     ["Freio Ar (Geral)", "Sistema CCBII", "Hidráulica de Alta Pressão", "Combustível / Óleo", "Água / Refrigeração"]
                 )
-                diametro_mangueira = st.selectbox(
-                    "Diâmetro Nominal da Mangueira (DN / Polegadas)",
+                diametro = st.selectbox(
+                    "Diâmetro Nominal (DN / Polegadas)",
                     ["1/4\"", "3/8\"", "1/2\"", "3/4\"", "1\"", "1.1/4\"", "1.1/2\"", "2\""]
                 )
                 pressao_trabalho = st.number_input("Pressão Máxima de Trabalho (PSI)", min_value=0, max_value=10000, value=300)
-                comprimento_mm = st.number_input("Comprimento Total (mm)", min_value=100, max_value=20000, value=1000, step=50)
 
             with col_m2:
-                st.markdown("#### Configuração de Terminais")
-                
-                # Terminal Lado A
-                st.markdown("**Terminal Lado A**")
-                tipo_terminal_1 = st.selectbox("Tipo Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"], key="t1")
-                diametro_terminal_1 = st.selectbox("Rosca / Diâmetro Lado A (JIC / NPT)", ["1/4\" - 18 NPT / 7/16\"-20 JIC", "3/8\" - 18 NPT / 9/16\"-18 JIC", "1/2\" - 14 NPT / 3/4\"-16 JIC", "3/4\" - 14 NPT / 1.1/16\"-12 JIC", "1\" - 11.5 NPT / 1.5/16\"-12 JIC"], key="dt1")
-
-                st.markdown("---")
-                
-                # Terminal Lado B
-                st.markdown("**Terminal Lado B**")
-                tipo_terminal_2 = st.selectbox("Tipo Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"], key="t2")
-                diametro_terminal_2 = st.selectbox("Rosca / Diâmetro Lado B (JIC / NPT)", ["1/4\" - 18 NPT / 7/16\"-20 JIC", "3/8\" - 18 NPT / 9/16\"-18 JIC", "1/2\" - 14 NPT / 3/4\"-16 JIC", "3/4\" - 14 NPT / 1.1/16\"-12 JIC", "1\" - 11.5 NPT / 1.5/16\"-12 JIC"], key="dt2")
+                tipo_terminal_1 = st.selectbox("Terminal Lado A", ["Fêmea Giratória JIC", "Macho Fixo NPT", "FlANGE Code 61", "Flange Code 62", "Olhal Hidráulico"])
+                tipo_terminal_2 = st.selectbox("Terminal Lado B", ["Fêmea Giratória JIC", "Macho Fixo NPT", "Flange Code 61", "Flange Code 62", "Olhal Hidráulico"])
+                comprimento_mm = st.number_input("Comprimento Total (mm)", min_value=100, max_value=20000, value=1000, step=50)
 
             observacoes_extras = st.text_area("Observações Específicas ou Requisitos de Norma (opcional)", placeholder="Ex: Capa protetora contra abrasão, mola de aço inox...")
 
@@ -165,23 +141,22 @@ else:
             st.success("Especificação gerada com sucesso!")
             st.markdown("### 📋 Resultado da Montagem")
             
+            # Exibição estruturada do item montado
             st.info(f"""
-            * **Tipo de Mangueira:** {tipo_mangueira}
             * **Aplicação:** {aplicacao}
-            * **Diâmetro da Mangueira:** {diametro_mangueira}
+            * **Diâmetro Nominal:** {diametro}
             * **Pressão de Trabalho:** {pressao_trabalho} PSI
+            * **Terminal A:** {tipo_terminal_1}
+            * **Terminal B:** {tipo_terminal_2}
             * **Comprimento:** {comprimento_mm} mm
-            * **Terminal A:** {tipo_terminal_1} ({diametro_terminal_1})
-            * **Terminal B:** {tipo_terminal_2} ({diametro_terminal_2})
             * **Requisitos Extras:** {observacoes_extras if observacoes_extras else 'Nenhum informado'}
             """)
             
-            sigla_tipo = "MANG-HID" if "Hidráulica" in tipo_mangueira else ("MANG-FRE" if "Freio" in tipo_mangueira else "MANG-SUC")
-            codigo_gerado = f"{sigla_tipo}-{diametro_mangueira.replace('/','').replace('\"','')}-{comprimento_mm}MM"
+            codigo_gerado = f"MANG-{aplicacao[:3].upper()}-{diametro.replace('/','').replace('\"','')}-{comprimento_mm}MM"
             st.markdown(f"**Código de Referência Sugerido:** `{codigo_gerado}`")
 
     else:
-        # Lógica padrão para Locomotivas e Máquinas de Via
+        # Lógica padrão para Locomotivas e Máquinas de Via (que mantêm o assistente de chat)
         if st.session_state.sistema_ativo == "locomotivas":
             PASTA_BASE_MANUAIS = Path("./Docs_Locomotivas")
             collection_name = "mir_suporte_locomotivas"
