@@ -274,102 +274,20 @@ else:
                         contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado."
                         
                         system_prompt = (
-                            "Você é o Mir, um assistente especialista sênior em engenharia e manutenção ferroviária. "
-                            "Sua função principal é atuar como um consultor técnico de suporte, respondendo a dúvidas, "
-                            "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados na base de dados.\n\n"
-                            "DIRETRIZES DE ATUAÇÃO:\n"
-                            "1. Fidelidade ao Contexto: Utilize os trechos dos manuais fornecidos abaixo como sua fonte primária de verdade técnica.\n"
-                            "2. Clareza e Estrutura: Explique os conceitos de forma didática, organizada em tópicos (bullet points) ou passos.\n"
-                            "3. Transparência em Caso de Omissão: Se a resposta exata não constar, informe educadamente e dê uma orientação geral ressalvando que não consta no manual.\n"
-                            "4. Citação de Fontes: Sempre cite o nome do documento (PDF) correspondente ao lado da informação.\n\n"
-                            f"CONTEXTO TÉCNICO EXTRAÍDO DOS MANUAIS:\n{contexto}"
-                        )
-
-                        messages_payload = [{"role": "system", "content": system_prompt}]
-                        for m in chat_atual["mensagens"][:-1]:
-                            messages_payload.append({"role": m["role"], "content": m["content"]})
-                        
-                        messages_payload.append({"role": "user", "content": chat_atual["mensagens"][-1]["content"]})
-
-                        response = client.chat.completions.create(
-                            model="openai/gpt-4o-mini",
-                            messages=messages_payload,
-                            temperature=0.0
-                        )
-                        
-                        resposta_ia = response.choices[0].message.content
-                        st.markdown(resposta_ia)
-                        chat_atual["mensagens"].append({"role": "assistant", "content": resposta_ia})
-                        st.rerun()
-                        
-                    except Exception as e:
-                        erro_msg = f"Erro na consulta: {e}"
-                        st.error(erro_msg)
-                        chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
-
-    elif aba_selecionada == "⚙️ Análise de Falhas":
-        st.markdown(f"### ⚙️ Análise de Falhas - {st.session_state.sistema_ativo.capitalize()}")
-        
-        chat_idx = st.session_state[chave_chat_atual_falhas]
-        chat_atual = st.session_state[chave_chats_falhas][chat_idx]
-
-        for msg in chat_atual["mensagens"]:
-            with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
-                st.markdown(msg["content"])
-
-        pergunta = st.chat_input("Descreva o equipamento, sistema e falha observada...", key="input_falha")
-
-        if pergunta:
-            chat_atual["mensagens"].append({"role": "user", "content": pergunta})
-            
-            if chat_atual["titulo"].startswith("Nova Falha") or chat_atual["titulo"].startswith("Falha"):
-                chat_atual["titulo"] = pergunta[:25] + "..." if len(pergunta) > 25 else pergunta
-
-            with st.chat_message("user", avatar="👤"):
-                st.markdown(pergunta)
-
-            with st.chat_message("assistant", avatar="🔹"):
-                with st.spinner("Analisando falha, parâmetros e manuais..."):
-                    try:
-                        pergunta_vetor = encoder.encode([pergunta]).tolist()
-                        resultados = collection.query(query_embeddings=pergunta_vetor, n_results=6)
-                        
-                        contexto_partes = []
-                        fontes_encontradas = set()
-                        if resultados and resultados["documents"] and resultados["documents"][0]:
-                            docs = resultados["documents"][0]
-                            metas = resultados["metadatas"][0] if resultados.get("metadatas") else [{}] * len(docs)
-                            for doc, meta in zip(docs, metas):
-                                contexto_partes.append(doc)
-                                if meta and "source" in meta:
-                                    fontes_encontradas.add(meta["source"])
-                        
-                        contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado na base de PDFs local."
-                        fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
-
-                        system_prompt = (
-                            Você é o MIR, um Técnico Especialista Sênior em Manutenção Ferroviária, com experiência em diagnóstico de falhas elétricas, eletrônicas, mecânicas, pneumáticas e eletromecânicas de locomotivas, máquinas ferroviárias e seus sistemas.
-
-Seu objetivo é atuar como um assistente técnico de manutenção, ajudando mecânicos, eletricistas, instrumentistas e técnicos de campo a interpretar eventos, identificar possíveis causas de falhas e definir procedimentos de diagnóstico e correção.
-
-### 🧠 COMPORTAMENTO DO MIR
-
-- Utilize linguagem técnica, objetiva, direta e prática.
-- Priorize informações que possam ser utilizadas diretamente na manutenção.
-- Não invente informações técnicas, valores, códigos de componentes, procedimentos ou especificações.
-- Quando uma informação não estiver disponível nos documentos fornecidos, deixe isso explícito.
-- Diferencie claramente:
-  - Informação confirmada pelo manual/documentação
-  - Interpretação técnica
-  - Hipótese ou causa provável
-- Nunca apresente uma hipótese como se fosse uma informação confirmada.
-- Sempre que possível, indique o que deve ser medido, testado, inspecionado ou verificado.
-- Considere segurança operacional antes de qualquer procedimento.
-- Se os dados forem insuficientes, não invente uma resposta. Solicite as informações necessárias.
-
-### 📚 USO DOS MANUAIS E DOCUMENTOS
-
-Os documentos fornecidos no contexto são a principal fonte técnica para suas respostas.
+                            "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
+                            "Sua linguagem é técnica, direta, prática e corporativa de oficina (voltada para técnicos e mecânicos).\n\n"
+                            "DIRETRIZES DE RESPOSTA:\n"
+                            "1. IDENTIFICAÇÃO DO MODELO: Preste atenção se o usuário citou o modelo do equipamento na pergunta.\n"
+                            "2. ANÁLISE DE DADOS: Se o usuário descreveu parâmetros, analise detalhadamente.\n"
+                            "3. HIPÓTESES PRIORIZADAS: Liste as prováveis causas em ordem decrescente de probabilidade.\n"
+                            "4. AÇÃO PRÁTICA: O que o técnico deve fazer AGORA?\n\n"
+                            "ESTRUTURA OBRIGATÓRIA DA RESPOSTA:\n"
+                            "### 🔎 Interpretação do Evento\n"
+                            "### 📊 Análise das Variáveis\n"
+                            "### 💡 Minha Hipótese de Diagnóstico\n"
+                            "### 🛠️ Plano de Ação (Checklist de Oficina)\n\n"
+                            f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
+                            f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                         )
 
                         messages_payload = [{"role": "system", "content": system_prompt}]
