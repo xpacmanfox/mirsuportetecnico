@@ -83,6 +83,13 @@ if st.session_state.sistema_ativo is None:
             
     with col2:
         st.markdown("---")
+        st.subheader("🔧 Especificação de Mangueiras")
+        st.markdown("Consulta e validação de especificações técnicas, normas e padrões de mangueiras ferroviárias.")
+        if st.button("🔧 Acessar Mangueiras", key="btn_mangueiras"):
+            st.session_state.sistema_ativo = "mangueiras"
+            st.rerun()
+
+        st.markdown("---")
         st.subheader("📦 Central de Catálogos e Materiais")
         st.markdown("Acesse o sistema externo de consulta de catálogos em PDF (Locomotivas e Máquinas) e códigos internos.")
         st.link_button(
@@ -98,12 +105,18 @@ else:
         titulo_sidebar = "🚆 MIR - Locomotivas"
         msg_inicial_duvida = "Olá. Use este canal para retirar dúvidas gerais sobre locomotivas."
         msg_inicial_falha = "Olá. Descreva a falha observada na locomotiva e o modelo (ex: AC44)."
-    else:
+    elif st.session_state.sistema_ativo == "maquinas_via":
         PASTA_BASE_MANUAIS = Path("./Docs_MaquinasVia")
         collection_name = "mir_suporte_via"
         titulo_sidebar = "🛤️ MIR - Máquinas de Via"
         msg_inicial_duvida = "Olá. Use este canal para retirar dúvidas sobre máquinas de via."
         msg_inicial_falha = "Olá. Descreva a falha na máquina de via (ex: Socadora Plasser)."
+    else:  # mangueiras
+        PASTA_BASE_MANUAIS = Path("./Docs_Mangueiras")
+        collection_name = "mir_suporte_mangueiras"
+        titulo_sidebar = "🔧 MIR - Mangueiras"
+        msg_inicial_duvida = "Olá. Use este canal para tirar dúvidas sobre especificações, diâmetros, pressões e normas de mangueiras."
+        msg_inicial_falha = "Olá. Descreva o problema ou aplicação da mangueira para verificar a conformidade técnica."
 
     PASTA_BASE_MANUAIS.mkdir(exist_ok=True)
     collection = chroma_client.get_or_create_collection(name=collection_name)
@@ -147,7 +160,7 @@ else:
         st.session_state[chave_chat_atual_duvidas] = 0
 
     if chave_chats_falhas not in st.session_state:
-        st.session_state[chave_chats_falhas] = [{"id": 1, "titulo": "Nova Falha", "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]}]
+        st.session_state[chave_chats_falhas] = [{"id": 1, "titulo": "Nova Análise", "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]}]
     if chave_chat_atual_falhas not in st.session_state:
         st.session_state[chave_chat_atual_falhas] = 0
 
@@ -169,7 +182,7 @@ else:
 
         aba_selecionada = st.radio(
             "Navegação",
-            ["📖 Dúvidas Técnicas", "⚙️ Análise de Falhas", "📂 Adicionar Conhecimento"],
+            ["📖 Dúvidas Técnicas", "⚙️ Análise / Consulta", "📂 Adicionar Conhecimento"],
             label_visibility="collapsed"
         )
 
@@ -202,14 +215,14 @@ else:
                     else:
                         st.warning("Mínimo de 1 chat.")
 
-        elif aba_selecionada == "⚙️ Análise de Falhas":
-            st.markdown("### 🕒 Histórico de Falhas")
-            if st.button("➕ Novo Chat de Falhas"):
+        elif aba_selecionada == "⚙️ Análise / Consulta":
+            st.markdown("### 🕒 Histórico de Consultas")
+            if st.button("➕ Novo Chat de Consulta"):
                 lista_chats = st.session_state[chave_chats_falhas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
                     "id": novo_id, 
-                    "titulo": f"Falha {novo_id}", 
+                    "titulo": f"Consulta {novo_id}", 
                     "mensagens": [{"role": "assistant", "content": msg_inicial_falha}]
                 })
                 st.session_state[chave_chat_atual_falhas] = len(lista_chats) - 1
@@ -248,7 +261,7 @@ else:
             with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
                 st.markdown(msg["content"])
 
-        pergunta = st.chat_input("Qual dúvida técnica você tem hoje?", key="input_duvida")
+        pergunta = st.chat_input("Digite sua dúvida técnica...", key="input_duvida")
 
         if pergunta:
             chat_atual["mensagens"].append({"role": "user", "content": pergunta})
@@ -260,7 +273,7 @@ else:
                 st.markdown(pergunta)
 
             with st.chat_message("assistant", avatar="🔹"):
-                with st.spinner("Realizando busca profunda nos manuais..."):
+                with st.spinner("Realizando busca profunda na base de dados..."):
                     try:
                         pergunta_vetor = encoder.encode([pergunta]).tolist()
                         resultados = collection.query(query_embeddings=pergunta_vetor, n_results=12)
@@ -275,7 +288,7 @@ else:
                         system_prompt = (
                             "Você é o Mir, um assistente especialista sênior em engenharia e manutenção ferroviária. "
                             "Sua função principal é atuar como um consultor técnico de suporte, respondendo a dúvidas, "
-                            "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados na base de dados.\n\n"
+                            "explicando conceitos e detalhando especificações com base estrita nos manuais e documentos indexados.\n\n"
                             f"CONTEXTO TÉCNICO EXTRAÍDO DOS MANUAIS:\n{contexto}"
                         )
 
@@ -301,8 +314,8 @@ else:
                         st.error(erro_msg)
                         chat_atual["mensagens"].append({"role": "assistant", "content": erro_msg})
 
-    elif aba_selecionada == "⚙️ Análise de Falhas":
-        st.markdown(f"### ⚙️ Análise de Falhas - {st.session_state.sistema_ativo.capitalize()}")
+    elif aba_selecionada == "⚙️ Análise / Consulta":
+        st.markdown(f"### ⚙️ Análise Técnica - {st.session_state.sistema_ativo.capitalize()}")
         
         chat_idx = st.session_state[chave_chat_atual_falhas]
         chat_atual = st.session_state[chave_chats_falhas][chat_idx]
@@ -311,19 +324,19 @@ else:
             with st.chat_message("assistant" if msg["role"] == "assistant" else "user", avatar="🔹" if msg["role"] == "assistant" else "👤"):
                 st.markdown(msg["content"])
 
-        pergunta = st.chat_input("Descreva o equipamento, sistema e falha observada...", key="input_falha")
+        pergunta = st.chat_input("Insira os parâmetros ou dados para análise...", key="input_falha")
 
         if pergunta:
             chat_atual["mensagens"].append({"role": "user", "content": pergunta})
             
-            if chat_atual["titulo"].startswith("Nova Falha") or chat_atual["titulo"].startswith("Falha"):
+            if chat_atual["titulo"].startswith("Nova Análise") or chat_atual["titulo"].startswith("Consulta"):
                 chat_atual["titulo"] = pergunta[:25] + "..." if len(pergunta) > 25 else pergunta
 
             with st.chat_message("user", avatar="👤"):
                 st.markdown(pergunta)
 
             with st.chat_message("assistant", avatar="🔹"):
-                with st.spinner("Analisando falha, parâmetros e manuais..."):
+                with st.spinner("Analisando especificações e normas..."):
                     try:
                         pergunta_vetor = encoder.encode([pergunta]).tolist()
                         resultados = collection.query(query_embeddings=pergunta_vetor, n_results=6)
@@ -338,11 +351,11 @@ else:
                                 if meta and "source" in meta:
                                     fontes_encontradas.add(meta["source"])
                         
-                        contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado na base de PDFs local."
+                        contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado na base local."
                         fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
 
                         system_prompt = (
-                            "Você é o Mir, um técnico especialista sênior em manutenção ferroviária.\n"
+                            "Você é o Mir, um engenheiro especialista sênior em manutenção ferroviária.\n"
                             f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
                             f"Fontes/Documentos disponíveis para referência: {fontes_str}"
                         )
@@ -369,10 +382,10 @@ else:
 
     elif aba_selecionada == "📂 Adicionar Conhecimento":
         st.markdown(f"# 📂 Adicionar Conhecimento - {st.session_state.sistema_ativo.capitalize()}")
-        st.markdown("Carregue novos manuais em PDF para expandir imediatamente a base de conhecimento.")
+        st.markdown("Carregue novos manuais ou especificações em PDF para expandir imediatamente a base.")
 
         uploaded_files = st.file_uploader(
-            "Carregar manuais técnicos (PDF)", type=["pdf"], accept_multiple_files=True
+            "Carregar documentos técnicos (PDF)", type=["pdf"], accept_multiple_files=True
         )
 
         if uploaded_files:
