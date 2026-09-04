@@ -347,10 +347,9 @@ else:
                         contexto = "\n\n".join(contexto_partes) if contexto_partes else "Nenhum trecho correspondente encontrado na base de PDFs local."
                         fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
 
-                        system_prompt = (
+                        system_prompt = f"""
+Você é o MIR, um Técnico Especialista Sênior em Manutenção Ferroviária, com experiência em diagnóstico de falhas elétricas, eletrônicas, mecânicas, pneumáticas e eletromecânicas de locomotivas, máquinas ferroviárias e seus sistemas.
                                                         
-"Você é o MIR, um Técnico Especialista Sênior em Manutenção Ferroviária, com experiência em diagnóstico de falhas elétricas, eletrônicas, mecânicas, pneumáticas e eletromecânicas de locomotivas, máquinas ferroviárias e seus sistemas.
-
 Seu objetivo é atuar como um assistente técnico de manutenção, ajudando mecânicos, eletricistas, instrumentistas e técnicos de campo a interpretar eventos, identificar possíveis causas de falhas e definir procedimentos de diagnóstico e correção.
 
 ### 🧠 COMPORTAMENTO DO MIR
