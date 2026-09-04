@@ -17,7 +17,7 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL DOS BOTÕES ---
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] * {
@@ -29,15 +29,19 @@ st.markdown("""
         .stChatInput textarea {
             font-size: 16px !important;
         }
-        div.stButton > button {
+        /* Padronização universal para botões e links em formato de botão (grandes e vermelhos) */
+        div.stButton > button, div.stLinkButton > a {
             background-color: #ff4b4b !important;
             color: white !important;
             border-radius: 6px !important;
             border: none !important;
             font-weight: 600 !important;
             width: 100% !important;
+            text-align: center !important;
+            padding: 0.5rem 1rem !important;
+            text-decoration: none !important;
         }
-        div.stButton > button:hover {
+        div.stButton > button:hover, div.stLinkButton > a:hover {
             background-color: #ff2b2b !important;
             color: white !important;
         }
@@ -112,8 +116,7 @@ else:
 
         st.title("🔧 Painel de Especificação de Mangueiras e Adaptadores")
         
-        # Abas internas para separar Mangueiras e Adaptadores
-        aba_mangueira, aba_adaptador = st.tabs([" hoses Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
+        aba_mangueira, aba_adaptador = st.tabs(["🪡 Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
 
         # TAB 1: MANGUEIRAS
         with aba_mangueira:
@@ -193,7 +196,6 @@ else:
         with aba_adaptador:
             st.markdown("### Configuração de Adaptadores e Conexões (Padrões JIC e NPT)")
             
-            # Tabelas baseadas na imagem fornecida
             tabela_jic = [
                 {"ng": "4", "ext_d": 11.07, "rosca": "JIC 7/16-20"},
                 {"ng": "6", "ext_d": 14.25, "rosca": "JIC 9/16-18"},
@@ -201,7 +203,7 @@ else:
                 {"ng": "10", "ext_d": 22.17, "rosca": "JIC 7/8-14"},
                 {"ng": "12", "ext_d": 26.95, "rosca": "JIC 1 1/16-12"},
                 {"ng": "16", "ext_d": 33.30, "rosca": "JIC 1 5/16-12"},
-                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"}, # Ajustado conforme proporção visual da tabela
+                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"},
                 {"ng": "24", "ext_d": 47.57, "rosca": "JIC 1 7/8-12"},
                 {"ng": "32", "ext_d": 63.45, "rosca": "JIC 2 1/2-12"}
             ]
