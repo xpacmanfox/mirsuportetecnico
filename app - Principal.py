@@ -17,7 +17,7 @@ st.set_page_config(
 if "sistema_ativo" not in st.session_state:
     st.session_state.sistema_ativo = None
 
-# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES VERMELHOS E LARGURA TOTAL) ---
+# --- CSS CUSTOMIZADO PARA PADRONIZAÇÃO VISUAL (BOTÕES VERMELHOS) ---
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] * {
@@ -35,9 +35,6 @@ st.markdown("""
             border-radius: 6px !important;
             border: none !important;
             font-weight: 600 !important;
-            width: 100% !important;
-            display: block !important;
-            text-align: center !important;
         }
         .stButton button:hover, div.stLinkButton a:hover {
             background-color: #ff2b2b !important;
@@ -72,14 +69,14 @@ if st.session_state.sistema_ativo is None:
         st.markdown("---")
         st.subheader("🚂 Locomotivas")
         st.markdown("Suporte especializado em locomotivas, sistemas de freio CCBII e elétrica ferroviária.")
-        if st.button("🚂 Acessar Locomotivas", key="btn_loc"):
+        if st.button("🚂 Acessar Locomotivas", key="btn_loc", width="stretch"):
             st.session_state.sistema_ativo = "locomotivas"
             st.rerun()
             
         st.markdown("---")
         st.subheader("🛤️ Máquinas de Via")
         st.markdown("Suporte especializado em máquinas de via permanente, socadoras (Plasser) e hidráulica.")
-        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via"):
+        if st.button("🛤️ Acessar Máquinas de Via", key="btn_via", width="stretch"):
             st.session_state.sistema_ativo = "maquinas_via"
             st.rerun()        
             
@@ -89,7 +86,8 @@ if st.session_state.sistema_ativo is None:
         st.markdown("Acesse o sistema externo de consulta de catálogos em PDF (Locomotivas e Máquinas) e códigos internos.")
         st.link_button(
             "🔗 Ir para Catálogos e Materiais", 
-            "https://mirmaterial.streamlit.app/"
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
         )
 
 # --- MÓDULOS DE SUPORTE TÉCNICO ---
@@ -154,14 +152,15 @@ else:
         st.session_state[chave_chat_atual_falhas] = 0
 
     with st.sidebar:
-        if st.button("🏠 Voltar ao Menu Principal"):
+        if st.button("🏠 Voltar ao Menu Principal", width="stretch"):
             st.session_state.sistema_ativo = None
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.link_button(
             "📦 Catálogos e Códigos", 
-            "https://mirmaterial.streamlit.app/"
+            "https://mirmaterial.streamlit.app/", 
+            width="stretch"
         )
 
         st.divider()
@@ -179,7 +178,7 @@ else:
         
         if aba_selecionada == "📖 Dúvidas Técnicas":
             st.markdown("### 🕒 Histórico de Dúvidas")
-            if st.button("➕ Novo Chat de Dúvidas"):
+            if st.button("➕ Novo Chat de Dúvidas", width="stretch"):
                 lista_chats = st.session_state[chave_chats_duvidas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -192,10 +191,10 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_duvidas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}"):
+                if col_h1.button(chat["titulo"], key=f"btn_duvida_{i}", width="stretch"):
                     st.session_state[chave_chat_atual_duvidas] = i
                     st.rerun()
-                if col_h2.button("🗑️", key=f"del_duvida_{i}"):
+                if col_h2.button("🗑️", key=f"del_duvida_{i}", width="stretch"):
                     lista_chats = st.session_state[chave_chats_duvidas]
                     if len(lista_chats) > 1:
                         del lista_chats[i]
@@ -206,7 +205,7 @@ else:
 
         elif aba_selecionada == "⚙️ Análise de Falhas":
             st.markdown("### 🕒 Histórico de Falhas")
-            if st.button("➕ Novo Chat de Falhas"):
+            if st.button("➕ Novo Chat de Falhas", width="stretch"):
                 lista_chats = st.session_state[chave_chats_falhas]
                 novo_id = len(lista_chats) + 1
                 lista_chats.append({
@@ -219,10 +218,10 @@ else:
 
             for i, chat in enumerate(st.session_state[chave_chats_falhas][-10:]):
                 col_h1, col_h2 = st.columns([0.8, 0.2])
-                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}"):
+                if col_h1.button(chat["titulo"], key=f"btn_falha_{i}", width="stretch"):
                     st.session_state[chave_chat_atual_falhas] = i
                     st.rerun()
-                if col_h2.button("🗑️", key=f"del_falha_{i}"):
+                if col_h2.button("🗑️", key=f"del_falha_{i}", width="stretch"):
                     lista_chats = st.session_state[chave_chats_falhas]
                     if len(lista_chats) > 1:
                         del lista_chats[i]
@@ -388,7 +387,7 @@ else:
 
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            if st.button("🧠 Indexar Novos PDFs da Pasta"):
+            if st.button("🧠 Indexar Novos PDFs da Pasta", width="stretch"):
                 arquivos = list(PASTA_BASE_MANUAIS.glob("**/*.pdf"))
                 if not arquivos:
                     st.warning(f"Nenhum arquivo PDF encontrado em {PASTA_BASE_MANUAIS}.")
@@ -402,7 +401,7 @@ else:
                     st.rerun()
 
         with col_btn2:
-            if st.button("🗑️ Limpar Base de Dados Indexada"):
+            if st.button("🗑️ Limpar Base de Dados Indexada", width="stretch"):
                 try:
                     chroma_client.delete_collection(collection_name)
                     chroma_client.get_or_create_collection(name=collection_name)
