@@ -41,6 +41,14 @@ st.markdown("""
             background-color: #ff2b2b !important;
             color: white !important;
         }
+        .card-adaptador {
+            background-color: #1e2530;
+            border: 2px solid #ff4b4b;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -112,8 +120,7 @@ else:
 
         st.title("🔧 Painel de Especificação de Mangueiras e Adaptadores")
         
-        # Abas internas para separar Mangueiras e Adaptadores
-        aba_mangueira, aba_adaptador = st.tabs([" hoses Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
+        aba_mangueira, aba_adaptador = st.tabs(["🧵 Mangueiras Hidráulicas", "⚙️ Adaptadores e Conexões"])
 
         # TAB 1: MANGUEIRAS
         with aba_mangueira:
@@ -193,7 +200,6 @@ else:
         with aba_adaptador:
             st.markdown("### Configuração de Adaptadores e Conexões (Padrões JIC e NPT)")
             
-            # Tabelas baseadas na imagem fornecida
             tabela_jic = [
                 {"ng": "4", "ext_d": 11.07, "rosca": "JIC 7/16-20"},
                 {"ng": "6", "ext_d": 14.25, "rosca": "JIC 9/16-18"},
@@ -201,7 +207,7 @@ else:
                 {"ng": "10", "ext_d": 22.17, "rosca": "JIC 7/8-14"},
                 {"ng": "12", "ext_d": 26.95, "rosca": "JIC 1 1/16-12"},
                 {"ng": "16", "ext_d": 33.30, "rosca": "JIC 1 5/16-12"},
-                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"}, # Ajustado conforme proporção visual da tabela
+                {"ng": "20", "ext_d": 41.22, "rosca": "JIC 1 9/16-18"},
                 {"ng": "24", "ext_d": 47.57, "rosca": "JIC 1 7/8-12"},
                 {"ng": "32", "ext_d": 63.45, "rosca": "JIC 2 1/2-12"}
             ]
@@ -218,22 +224,43 @@ else:
                 {"ng": "32", "ext_d": 59.00, "rosca": "NPT 2\"-11 1/2"}
             ]
 
-            modelos_adaptadores = [
-                "2021- (Adaptador Macho Giratório 90°)",
-                "2041- (Adaptador Reto Macho-Macho)",
-                "2042- (Adaptador Macho 45°)",
-                "2043- (Adaptador Macho 90°)",
-                "2023- (Adaptador Fêmea Giratória 90°)",
-                "2024- (Adaptador Fêmea Giratória 45°)",
-                "2081- (Adaptador Tê / Redução)",
-                "2088- (Adaptador Cruz / Tê Especial)",
-                "2030- (Tampão Cego / Plugue)",
-                "2092- (União Anteparo / Conexão Reta)"
-            ]
+            # Dicionário com informações visuais e esquemáticas dos adaptadores da imagem
+            info_adaptadores = {
+                "2021-": {"nome": "Adaptador Macho Giratório 90°", "tipo": "Curva 90° com Giratório", "simbolo": "📐 90° Giratório"},
+                "2041-": {"nome": "Adaptador Reto Macho-Macho", "tipo": "Conexão Reta Simétrica", "simbolo": "📏 Reto Simétrico"},
+                "2042-": {"nome": "Adaptador Macho 45°", "tipo": "Curva 45°", "simbolo": "📐 45° Curva"},
+                "2043-": {"nome": "Adaptador Macho 90°", "tipo": "Curva 90° Fixa", "simbolo": "📐 90° Fixo"},
+                "2023-": {"nome": "Adaptador Fêmea Giratória 90°", "tipo": "Curva 90° Fêmea", "simbolo": "🔄 90° Fêmea Giratória"},
+                "2024-": {"nome": "Adaptador Fêmea Giratória 45°", "tipo": "Curva 45° Fêmea", "simbolo": "🔄 45° Fêmea Giratória"},
+                "2081-": {"nome": "Adaptador Tê / Redução", "tipo": "Derivação em Tê (Três Vias)", "simbolo": "🔀 Tê de Derivação"},
+                "2088-": {"nome": "Adaptador Cruz / Tê Especial", "tipo": "Cruzamento de Linhas", "simbolo": "➕ Conexão em Cruz"},
+                "2030-": {"nome": "Tampão Cego / Plugue", "tipo": "Fechamento de Linha", "simbolo": "🛑 Tampão Cego"},
+                "2092-": {"nome": "União Anteparo / Conexão Reta", "tipo": "Passagem de Anteparo", "simbolo": "🔩 União Anteparo"},
+                "2027-": {"nome": "Adaptador Redução Reta", "tipo": "Redução de Rosca", "simbolo": "📉 Redução Reta"},
+                "900599-": {"nome": "Adaptador Especial / Conexão", "tipo": "Conector Especial", "simbolo": "⚙️ Conector Especial"}
+            }
+
+            # Seleção fora ou dentro do formulário para exibição imediata da pré-visualização visual
+            col_sel_mod, col_prev_mod = st.columns([1, 1])
+            
+            with col_sel_mod:
+                modelo_selecionado_chave = st.selectbox(
+                    "Selecione o Modelo do Adaptador", 
+                    list(info_adaptadores.keys()), 
+                    format_func=lambda x: f"{x} - {info_adaptadores[x]['nome']}"
+                )
+
+            with col_prev_mod:
+                detalhe = info_adaptadores[modelo_selecionado_chave]
+                st.markdown(f"""
+                <div style="background-color: #1e2530; border: 2px solid #ff4b4b; padding: 12px; border-radius: 8px; text-align: center;">
+                    <h4 style="color: #ff4b4b; margin: 0;">Esquema: Modelo {modelo_selecionado_chave}</h4>
+                    <p style="font-size: 18px; margin: 5px 0;"><b>{detalhe['simbolo']}</b></p>
+                    <p style="font-size: 14px; color: #a0a0a0; margin: 0;">Categoria: {detalhe['tipo']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
             with st.form("form_montagem_adaptador"):
-                modelo_adaptador = st.selectbox("Selecione o Modelo do Adaptador", modelos_adaptadores)
-                
                 col_ad1, col_ad2 = st.columns(2)
                 
                 with col_ad1:
@@ -262,10 +289,10 @@ else:
                 submitted_adaptador = st.form_submit_button("Gerar Código do Adaptador")
 
             if submitted_adaptador:
-                prefixo_codigo = modelo_adaptador.split(" ")[0]
+                prefixo_codigo = modelo_selecionado_chave
                 st.success("Adaptador especificado com sucesso!")
                 st.info(f"""
-                * **Modelo do Adaptador:** {modelo_adaptador}
+                * **Modelo do Adaptador:** {modelo_selecionado_chave} - {info_adaptadores[modelo_selecionado_chave]['nome']}
                 * **Lado 1:** {escolha_l1}
                 * **Lado 2:** {escolha_l2}
                 * **Quantidade:** {qtd_pecas} unidade(s)
@@ -524,9 +551,9 @@ else:
                             fontes_str = ", ".join(fontes_encontradas) if fontes_encontradas else "Nenhum manual PDF local indexado para citação."
 
                             system_prompt = (
-                                "Você é o Mir, um engenheiro especialista sênior em manutenção ferroviária.\n"
-                                f"Contexto técnico extraído dos manuais locais:\n{contexto}\n\n"
-                                f"Fontes/Documentos disponíveis para referência: {fontes_str}"
+                                "You are Mir, a senior railway maintenance engineering specialist.\n"
+                                f"Technical context extracted from local manuals:\n{contexto}\n\n"
+                                f"Available reference sources: {fontes_str}"
                             )
 
                             messages_payload = [{"role": "system", "content": system_prompt}]
